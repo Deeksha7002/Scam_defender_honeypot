@@ -1,0 +1,5 @@
+# Standard Python project requirements
+# No external libraries are currently required for this simulation.
+# Keeping it ready for future integrations.
+requests==2.32.3
+python-dotenv==1.0.1
