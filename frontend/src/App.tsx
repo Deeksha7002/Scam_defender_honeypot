@@ -25,6 +25,8 @@ interface Thread {
   messages: Message[];
   classification: Classification | null;
   isIntercepted: boolean;
+  isArchived: boolean;
+  autoReported?: boolean;
   isScanning: boolean;
   persona?: string;
   avatar?: string; // URL to avatar image
@@ -121,7 +123,8 @@ function App() {
       location: scenario.location,
       detectedLocation: GeoTracer.trace(scenario.location),
       avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${scenario.senderName}`,
-      isCompromised: false
+      isCompromised: false,
+      isArchived: false
     };
 
     setThreads(prev => [newThread, ...prev]); // Add to top
@@ -151,7 +154,8 @@ function App() {
       location: scenario.location,
       detectedLocation: GeoTracer.trace(scenario.location),
       avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${scenario.senderName}`,
-      isCompromised: false
+      isCompromised: false,
+      isArchived: false
     };
 
     setThreads(prev => [...prev, newThread]);
@@ -188,7 +192,7 @@ function App() {
       const relationalContext = scenario?.relationalContext;
 
       // Classify the incoming message
-      const { classification, safeText, intent, score, isCompromised } = agent.ingest(content, relationalContext);
+      const { classification, safeText, intent, score, isCompromised, autoReported } = agent.ingest(content, threadId, relationalContext);
 
       // Check interception status from current state + new classification
       // Check interception status from current state + new classification
@@ -311,7 +315,8 @@ function App() {
         iocs: report.iocs,
         transcript: thread.messages,
         timestamp: new Date(report.timestamp).toLocaleDateString(),
-        detectedLocation: thread.detectedLocation // Map the traced location
+        detectedLocation: thread.detectedLocation, // Map the traced location
+        autoReported: thread.autoReported
       });
     });
 
@@ -405,6 +410,21 @@ function App() {
                   {selectedThread.isScanning && <span className="status-scanning">Scanning...</span>}
                   {selectedThread.classification === 'benign' && (
                     <span className="status-safe">✓ Verified Safe</span>
+                  )}
+                  {selectedThread.autoReported && (
+                    <span className="status-reported" style={{
+                      background: 'rgba(34, 197, 94, 0.2)',
+                      color: '#4ade80',
+                      padding: '2px 8px',
+                      borderRadius: '12px',
+                      fontSize: '0.75rem',
+                      fontWeight: 'bold',
+                      border: '1px solid #22c55e',
+                      marginLeft: '10px',
+                      boxShadow: '0 0 10px rgba(34, 197, 94, 0.3)'
+                    }}>
+                      AUTO-REPORTED TO CYBER CELL ✅
+                    </span>
                   )}
                 </div>
               </div>

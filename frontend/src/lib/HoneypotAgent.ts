@@ -3,6 +3,7 @@ import type { PersonaType } from './config';
 import { SafetyGuard } from './Safety';
 import { BaitGenerator } from './BaitGenerator';
 import { ScamAnalyzer } from './ScamAnalyzer';
+import { CyberCellService } from './CyberCellService';
 import type { Classification, Message, IncidentReport, IOCs } from './types';
 
 export class HoneypotAgent {
@@ -21,7 +22,7 @@ export class HoneypotAgent {
     // Current Persona state
     public currentPersona: PersonaType = 'ELDERLY';
 
-    ingest(text: string, relationalContext?: 'family' | 'work' | 'friend'): { classification: Classification, safeText: string, intent: string, score: number, isCompromised: boolean } {
+    ingest(text: string, conversationId: string, relationalContext?: 'family' | 'work' | 'friend'): { classification: Classification, safeText: string, intent: string, score: number, isCompromised: boolean, autoReported: boolean } {
         // 1. Redact
         const safeText = SafetyGuard.redactPII(text);
         if (safeText !== text) {
@@ -61,12 +62,21 @@ export class HoneypotAgent {
             this.maxThreatLevel = 'scam';
         }
 
+        // 7. Automated Cyber Cell Reporting (New)
+        let autoReported = false;
+        if (this.maxThreatLevel === 'scam') {
+            autoReported = true;
+            const report = this.getReport(conversationId, this.maxThreatLevel, [...this.conversationHistory]);
+            CyberCellService.autoReport(report);
+        }
+
         return {
             classification: this.maxThreatLevel,
             safeText,
             intent,
             score: Math.round(score * 100), // 0-100 scale
-            isCompromised
+            isCompromised,
+            autoReported
         };
     }
 

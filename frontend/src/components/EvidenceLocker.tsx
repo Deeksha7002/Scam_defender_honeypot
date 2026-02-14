@@ -125,7 +125,10 @@ export const EvidenceLocker: React.FC<EvidenceLockerProps> = ({ cases, onClose }
                                     {selectedCaseId === c.id ? <FolderOpen size={18} /> : <Folder size={18} />}
                                     <div className="locker-case-info">
                                         <div className="locker-case-name">{c.scammerName}</div>
-                                        <div className="locker-case-meta">{c.platform} • {c.status}</div>
+                                        <div className="locker-case-meta">
+                                            {c.platform} • {c.status}
+                                            {c.autoReported && <span style={{ color: '#4ade80', marginLeft: '8px' }}>• Reported</span>}
+                                        </div>
                                     </div>
                                     {c.threatLevel === 'scam' && <div className="locker-threat-dot"></div>}
                                 </div>

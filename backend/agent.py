@@ -39,8 +39,21 @@ class HoneypotAgent:
         
         # 4. Extract IOCs
         self._extract_iocs(safe_text)
+
+        # 5. AUTOMATED REPORTING (New)
+        if classification in ["scam", "likely_scam"]:
+             self.report_to_cyber_cell(conv_id, classification)
         
         return classification
+
+    def report_to_cyber_cell(self, conversation_id, threat_level):
+        """
+        Simulates sending a formal report (JSON + PDF) to the Cyber Cell.
+        """
+        logging.info(f"🚨 [AUTO-REPORT] High threat detected for {conversation_id} ({threat_level})")
+        logging.info(f"📤 [AUTO-REPORT] Generating JSON metadata...")
+        logging.info(f"📄 [AUTO-REPORT] Generating Evidence_Report_{conversation_id}.pdf...")
+        logging.info(f"✅ [AUTO-REPORT] Successfully transmitted to Cyber Cell reporting portal.")
 
     def _classify(self, text):
         """

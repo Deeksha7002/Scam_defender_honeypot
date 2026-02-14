@@ -12,8 +12,8 @@ An AI-powered honeypot system designed to engage with and analyze scammers in re
 
 ## 🏗️ Architecture
 
-- **Backend (Python)**: Handles the AI logic, persona management, and core scam analysis routines.
-- **Frontend (Web App)**: A Vite-powered React application providing the user interface and dashboard metrics.
+- **frontend/**: A Vite-powered React application providing the user interface and dashboard metrics.
+- **backend/**: Handles the AI logic, persona management, and core scam analysis routines.
 - **PWA Support**: Can be installed as a Progressive Web App for a native-like experience on desktop and mobile.
 
 ## 🛠️ Setup & Running

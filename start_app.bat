@@ -5,10 +5,10 @@ echo   Honeypot AI Defense - Startup Script
 echo ==============================================
 
 echo [1/3] Starting Backend Server...
-start "Honeypot Backend" cmd /k "python main.py"
+start "Honeypot Backend" cmd /k "python backend/main.py"
 
 echo [2/3] Starting Web Frontend...
-cd web-app
+cd frontend
 start "Honeypot Frontend" cmd /k "npm run dev"
 
 echo [3/3] Launching Browser...
