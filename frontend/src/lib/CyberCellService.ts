@@ -28,10 +28,10 @@ export class CyberCellService {
                 }))
             };
 
-            console.log('[CyberCellService] Generated JSON Payload:', evidenceJson);
+            const jsonSize = new TextEncoder().encode(JSON.stringify(evidenceJson)).length;
+            console.log(`%c[CyberCellService] 📄 Forensic JSON Payload generated (${(jsonSize / 1024).toFixed(2)} KB)`, 'color: #3b82f6; font-style: italic;');
 
             // 2. Generate PDF Evidence (using existing logic)
-            // We convert the IncidentReport to a CaseFile shim for the generator
             const caseShim: CaseFile = {
                 id: report.conversationId,
                 scammerName: "Identified Threat",
@@ -45,15 +45,15 @@ export class CyberCellService {
             };
 
             const pdfBlob = PDFGenerator.getPDFBlob(caseShim, report.transcript);
-            console.log(`[CyberCellService] Generated PDF Evidence (${(pdfBlob.size / 1024).toFixed(2)} KB)`);
+            console.log(`%c[CyberCellService] 🛡️ Forensic PDF Attachment generated (${(pdfBlob.size / 1024).toFixed(2)} KB)`, 'color: #3b82f6; font-style: italic;');
 
             // 3. Simulate API Transmission
-            console.log(`[CyberCellService] POSTING to ${this.MOCK_ENDPOINT}...`);
+            console.log(`[CyberCellService] ⬆️ Uploading to forensic gateway: ${this.MOCK_ENDPOINT}...`);
 
             // Artificial delay to simulate network
             await new Promise(resolve => setTimeout(resolve, 1500));
 
-            console.log('%c[CyberCellService] ✅ Successfully transmitted Evidence JSON and PDF Attachment.', 'color: #22c55e; font-weight: bold;');
+            console.log('%c[CyberCellService] ✅ TRANSMISSION SUCCESS: Forensic Bundle (PDF + JSON) delivered.', 'color: #22c55e; font-weight: bold; border: 1px solid #22c55e; padding: 2px 5px;');
             return true;
         } catch (error) {
             console.error('[CyberCellService] ❌ Failed to auto-report:', error);

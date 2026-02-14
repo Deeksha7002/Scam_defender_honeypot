@@ -9,10 +9,10 @@ import { MockScammerAPI } from './lib/MockScammerAPI';
 import { HoneypotAgent } from './lib/HoneypotAgent';
 import { soundManager } from './lib/SoundManager';
 import { GeoTracer } from './lib/GeoTracer';
-import { Play, Database, Volume2, VolumeX, ShieldAlert, LogOut } from 'lucide-react';
+import { Play, Database, Volume2, VolumeX, ShieldAlert, LogOut, CheckCircle } from 'lucide-react';
 import { useAuth } from './context/AuthContext';
 import { useThreads } from './context/ThreadProvider';
-import type { Message, Classification, GeoLocation, Thread, CaseFile, Scenario } from './lib/types';
+import type { Message, Thread, CaseFile, Scenario } from './lib/types';
 import './index.css';
 
 const EvidenceLocker = lazy(() => import('./components/EvidenceLocker').then(module => ({ default: module.EvidenceLocker })));
@@ -26,6 +26,15 @@ function App() {
   const [isMonitoring, setIsMonitoring] = useState(false);
   const [showLocker, setShowLocker] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
+  const [notification, setNotification] = useState<string | null>(null);
+
+  // Auto-clear notification
+  useEffect(() => {
+    if (notification) {
+      const timer = setTimeout(() => setNotification(null), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [notification]);
 
 
 
@@ -212,6 +221,18 @@ function App() {
         };
       }));
 
+      // Trigger Notification for Auto-Reporting
+      if (autoReported && !threadState?.autoReported) {
+        const isCompromise = isCompromised || threadState?.isCompromised;
+        const alertPrefix = isCompromise ? "🚩 COMPROMISE ALERT" : "🚨 AUTO-REPORTED";
+        const alertMsg = isCompromise
+          ? `Known contact ${senderName || 'Unknown'} appears compromised. Behavior anomaly reported to Cyber Cell.`
+          : `High threat detected from ${senderName || 'Unknown'}. Evidence securely transmitted to Cyber Cell.`;
+
+        setNotification(`${alertPrefix}: ${alertMsg}`);
+        soundManager.playSuccess();
+      }
+
 
 
       // Generate AI Response if Thread is Active/Intercepted
@@ -288,19 +309,24 @@ function App() {
 
       const report = agent.getReport(thread.id, thread.classification || 'likely_scam', thread.messages);
 
-      cases.push({
+      const threatLevel = report.classification || thread.classification || 'likely_scam';
+      const isReported = report.autoReported || thread.autoReported || threatLevel === 'scam';
+
+      const data = {
         id: thread.id,
         scammerName: thread.senderName,
         platform: thread.source,
         status: thread.isArchived ? 'closed' : 'active',
-
-        threatLevel: thread.classification || 'likely_scam',
+        threatLevel,
         iocs: report.iocs,
         transcript: thread.messages,
         timestamp: new Date(report.timestamp).toLocaleDateString(),
         detectedLocation: thread.detectedLocation, // Map the traced location
-        autoReported: thread.autoReported
-      });
+        autoReported: isReported
+      };
+
+      console.log(`[App] Case Entry: ${data.id}, Reported: ${data.autoReported}`);
+      cases.push(data as CaseFile);
     });
 
     return cases;
@@ -322,6 +348,38 @@ function App() {
 
   return (
     <>
+      {/* Global Notification Toast */}
+      {notification && (
+        <div style={{
+          position: 'fixed',
+          top: '20px',
+          right: '20px',
+          zIndex: 10000,
+          background: '#059669',
+          color: 'white',
+          padding: '12px 20px',
+          borderRadius: '8px',
+          boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.4)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px',
+          borderLeft: '4px solid #10b981',
+          animation: 'slideIn 0.3s ease-out',
+          maxWidth: '400px',
+          fontSize: '0.9rem',
+          fontWeight: 500
+        }}>
+          <CheckCircle size={20} />
+          <span>{notification}</span>
+          <button
+            onClick={() => setNotification(null)}
+            style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', padding: '4px', opacity: 0.7 }}
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
       <div className="messenger-container">
         {/* Sidebar */}
         <div className="sidebar">
@@ -333,7 +391,9 @@ function App() {
               lastMessage: t.messages[t.messages.length - 1]?.content || '',
               classification: t.classification,
               isIntercepted: t.isIntercepted,
-              persona: t.persona
+              persona: t.persona,
+              autoReported: t.autoReported,
+              isCompromised: t.isCompromised
             }))}
 
             selectedThreadId={selectedThreadId}

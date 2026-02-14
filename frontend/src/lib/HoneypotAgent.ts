@@ -22,6 +22,9 @@ export class HoneypotAgent {
     // Current Persona state
     public currentPersona: PersonaType = 'ELDERLY';
 
+    // Track if already reported to avoid duplicates
+    private hasAutoReported: boolean = false;
+
     ingest(text: string, conversationId: string, relationalContext?: 'family' | 'work' | 'friend'): { classification: Classification, safeText: string, intent: string, score: number, isCompromised: boolean, autoReported: boolean } {
         // 1. Redact
         const safeText = SafetyGuard.redactPII(text);
@@ -63,12 +66,27 @@ export class HoneypotAgent {
         }
 
         // 7. Automated Cyber Cell Reporting (New)
-        let autoReported = false;
-        if (this.maxThreatLevel === 'scam') {
-            autoReported = true;
+        // Escalated logic: Report if confirmed 'scam' OR if 'likely_scam' involves high-risk intent
+        const isHighRiskIntent = ['MONEY', 'CODES', 'LINKS'].includes(intent);
+        const shouldAutoReport =
+            (this.maxThreatLevel === 'scam') ||
+            (this.maxThreatLevel === 'likely_scam' && isHighRiskIntent);
+
+        if (shouldAutoReport && !this.hasAutoReported) {
+            console.log(`[HoneypotAgent] 🚨 AUTO-REPORT TRIGGERED for ${conversationId}`);
+            console.log(`[HoneypotAgent] Reason: ${this.maxThreatLevel} classification with intent: ${intent}`);
+            this.hasAutoReported = true;
             const report = this.getReport(conversationId, this.maxThreatLevel, [...this.conversationHistory]);
             CyberCellService.autoReport(report);
         }
+
+        const autoReported = this.hasAutoReported || this.maxThreatLevel === 'scam';
+
+        if (autoReported) {
+            console.log(`[HoneypotAgent] Thread ${conversationId} is currently in REPORTED status.`);
+        }
+
+        console.log(`[HoneypotAgent] Ingest Complete. Class: ${this.maxThreatLevel}, Reported: ${autoReported}, Intent: ${intent}`);
 
         return {
             classification: this.maxThreatLevel,
@@ -86,15 +104,24 @@ export class HoneypotAgent {
 
         if (context === 'family') {
             // High trust but never business/urgent financial
-            const forbiddenKeywords = ['gift card', 'crypto', 'bitcoin', 'investment', 'urgent', 'wire transfer', 'bail', 'jail', 'verify', 'password'];
-            return forbiddenKeywords.some(kw => lower.includes(kw));
+            const forbiddenKeywords = [
+                'gift card', 'crypto', 'bitcoin', 'investment', 'urgent', 'wire transfer',
+                'bail', 'jail', 'verify', 'password', 'jam', 'stranded', 'emergency fund', 'zelle', 'venmo', 'cashapp'
+            ];
+            const detected = forbiddenKeywords.some(kw => lower.includes(kw));
+            if (detected) console.log(`[HoneypotAgent] 🚨 Compromise detected in FAMILY context: "${text}"`);
+            return detected;
         }
 
         if (context === 'work') {
             // Professional but never personal financial/security via informal channels
-            // Added 'urgent invoice' and 'login' to catch the Sarah scenario
-            const forbiddenKeywords = ['gift card', 'steam', 'itunes', 'personal info', 'password', 'credit card', 'banking', 'urgent favor', 'urgent invoice', 'login'];
-            return forbiddenKeywords.some(kw => lower.includes(kw));
+            const forbiddenKeywords = [
+                'gift card', 'steam', 'itunes', 'personal info', 'password', 'credit card',
+                'banking', 'urgent favor', 'urgent invoice', 'login', 'deadline', 'missing bill', 'overdue'
+            ];
+            const detected = forbiddenKeywords.some(kw => lower.includes(kw));
+            if (detected) console.log(`[HoneypotAgent] 🚨 Compromise detected in WORK context: "${text}"`);
+            return detected;
         }
 
         return false;
@@ -146,16 +173,36 @@ export class HoneypotAgent {
 
     private classify(text: string): Classification {
         const lower = text.toLowerCase();
-        // Expanded keywords for IRS, Tech Support, and general scams
-        const scamKeywords = [
-            "verify", "wallet", "private key", "bank", "earn", "compromised",
-            "limited", "proposal", "transfer", "urgent", "click", "upi",
-            "warrant", "arrest", "irs", "tax", "federal", "jail", // IRS/Authority
-            "virus", "infected", "microsoft", "support", "hacked", "illegal" // Tech Support
+
+        // Priority 1: High Confidence Scam Keywords (Instant 'scam')
+        const highConfidenceScam = [
+            "warrant", "arrest", "irs", "jail", "federal", "court", "legal", "police", "tax", "taxes", "unpaid", "violation", // Authority
+            "private key", "wallet", "seed phrase", "crypto", "bitcoin", "invest", "yield", "profit", "trading", "wallet connection", // Crypto
+            "gift card", "itunes", "google play", "steam", "amazon card", "vanilla card", // Payment Methods
+            "hacked", "virus", "remote access", "remote desk", "support", "anydesk", "teamviewer", "microsoft support", // Tech Support
+            "prize", "winner", "won", "lottery", "jackpot", "claim code", "selection", "congratulations", // Lottery/Prize
+            "job offer", "recruit", "daily pay", "salary", "work from home", "telegram task", "optimize", // Employment
+            "urgent favor", "help me", "stranded", "hospital bill", "emergency fund", "loan", "borrow", // Social Engineering
+            "unauthorized", "suspicious activity", "locked account", "suspended", "verify identity" // Banking/Phishing
         ];
 
-        if (scamKeywords.some(kw => lower.includes(kw))) return 'scam';
-        if (lower.includes("http") || lower.includes(".com")) return 'likely_scam';
+        // Priority 2: General Suspicious Keywords (High confidence when combined or repeated)
+        const scamKeywords = [
+            "verify", "bank", "earn", "compromised", "limited", "proposal",
+            "transfer", "urgent", "click", "upi", "microsoft", "infected",
+            "account", "login", "password", "details", "personal", "ssn", "social security"
+        ];
+
+        if (highConfidenceScam.some(kw => lower.includes(kw))) {
+            console.log(`[HoneypotAgent] High Confidence Match detected: ${highConfidenceScam.find(kw => lower.includes(kw))}`);
+            return 'scam';
+        }
+
+        if (scamKeywords.some(kw => lower.includes(kw))) {
+            return 'scam';
+        }
+
+        if (lower.includes("http") || lower.includes(".com") || lower.includes(".net") || lower.includes(".org") || lower.includes(".site")) return 'likely_scam';
         return 'benign';
     }
 
@@ -302,13 +349,15 @@ export class HoneypotAgent {
             confidenceScore: this.maxThreatLevel === 'scam' ? 0.95 : this.maxThreatLevel === 'likely_scam' ? 0.75 : 0.1,
             iocs: { ...this.iocs },
             transcript,
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
+            autoReported: this.hasAutoReported
         };
     }
 
     reset() {
         this.maxThreatLevel = 'benign';
         this.currentPersona = 'ELDERLY';
+        this.hasAutoReported = false;
         this.iocs = {
             urls: [],
             domains: [],

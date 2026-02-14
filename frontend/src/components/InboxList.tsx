@@ -11,6 +11,7 @@ interface ThreadSummary {
     isIntercepted: boolean;
     persona?: string;
     isCompromised?: boolean;
+    autoReported?: boolean;
 }
 
 interface InboxListProps {
@@ -104,6 +105,24 @@ export const InboxList: React.FC<InboxListProps> = ({ threads, selectedThreadId,
                             {t.isIntercepted && t.persona && (
                                 <div className={`persona-badge ${t.persona.toLowerCase()}`}>
                                     {getPersonaBadge(t.persona)}
+                                </div>
+                            )}
+
+                            {t.autoReported && (
+                                <div style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '4px',
+                                    background: 'rgba(34, 197, 94, 0.15)',
+                                    color: '#4ade80',
+                                    fontSize: '0.65rem',
+                                    padding: '1px 6px',
+                                    borderRadius: '4px',
+                                    marginTop: '4px',
+                                    border: '1px solid rgba(34, 197, 94, 0.3)',
+                                    fontWeight: 'bold'
+                                }}>
+                                    REPORTED
                                 </div>
                             )}
                         </div>
