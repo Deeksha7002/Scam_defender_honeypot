@@ -1,4 +1,4 @@
-import { ForensicsService } from './src/lib/ForensicsService';
+import { ForensicsService } from './frontend/src/lib/ForensicsService';
 
 async function verifyDeterministic() {
     const testCases = [

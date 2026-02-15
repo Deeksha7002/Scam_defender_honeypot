@@ -129,7 +129,7 @@ export interface MediaAnalysisResult {
     confidenceLevel: 'Low' | 'Medium' | 'High';
     keyFindings: string[];
     technicalIndicators: string[];
-    recommendation: 'Authentic' | 'Likely Authentic' | 'Inconclusive' | 'Likely Manipulated' | 'Manipulated' | 'Authentic Graphic' | 'Unverified';
+    recommendation: 'Authentic' | 'Likely Authentic' | 'Inconclusive' | 'Likely Manipulated' | 'Manipulated' | 'Authentic Graphic';
     reasoning: string;
     anomalyScore?: number; // 0-100 (Unseen patterns)
     generalizationConfidence?: number; // 0-100
