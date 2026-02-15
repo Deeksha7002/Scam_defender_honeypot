@@ -11,7 +11,7 @@ import { IntelligenceService } from './lib/IntelligenceService';
 import { IntelligenceReport } from './components/IntelligenceReport';
 import { soundManager } from './lib/SoundManager';
 import { GeoTracer } from './lib/GeoTracer';
-import { Play, Database, Volume2, VolumeX, ShieldAlert, LogOut, CheckCircle, BarChart3, ScanEye, Shield } from 'lucide-react';
+import { Play, Database, Volume2, VolumeX, ShieldAlert, LogOut, BarChart3, ScanEye, Shield } from 'lucide-react';
 import { DeepfakeAnalyzer } from './components/DeepfakeAnalyzer';
 import { ForensicsService } from './lib/ForensicsService';
 import { MediaLogService } from './lib/MediaLogService';
@@ -19,7 +19,7 @@ import { Anonymizer } from './lib/Anonymizer';
 import { CyberCellService } from './lib/CyberCellService';
 import { useAuth } from './context/AuthContext';
 import { useThreads } from './context/ThreadProvider';
-import type { Message, Classification, GeoLocation, Thread, CaseFile, Scenario } from './lib/types';
+import type { Message, Thread, CaseFile, Scenario } from './lib/types';
 import './index.css';
 
 const EvidenceLocker = lazy(() => import('./components/EvidenceLocker').then(module => ({ default: module.EvidenceLocker })));

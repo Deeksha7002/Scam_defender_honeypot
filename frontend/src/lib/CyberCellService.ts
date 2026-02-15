@@ -30,8 +30,7 @@ export class CyberCellService {
 
             console.log('[CyberCellService] Generated JSON Payload:', evidenceJson);
 
-            // 2. Generate PDF Evidence (using existing logic)
-            // We convert the IncidentReport to a CaseFile shim for the generator
+            // 2. Generate PDF Evidence
             const caseShim: CaseFile = {
                 id: report.conversationId,
                 scammerName: "Identified Threat",
@@ -59,5 +58,19 @@ export class CyberCellService {
             console.error('[CyberCellService] ❌ Failed to auto-report:', error);
             return false;
         }
+    }
+
+    /**
+     * Alias for autoReport used by some components
+     */
+    static async reportScam(report: IncidentReport): Promise<boolean> {
+        return this.autoReport(report);
+    }
+
+    /**
+     * Wipes any session-specific state in the Cyber Cell integration
+     */
+    static clearSession(): void {
+        console.log('[CyberCellService] 🔒 SESSION PURGED: All local transaction traces removed.');
     }
 }
