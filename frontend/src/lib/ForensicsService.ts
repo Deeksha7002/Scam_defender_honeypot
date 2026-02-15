@@ -44,18 +44,21 @@ export class ForensicsService {
         // 2. HEURISTIC ENGINE: Weighted Ensemble Voting
         // Universal Synthesis Scanner: Detecting "Meta-Patterns"
         const metaPatterns = {
-            isSubjectAI: (lowerName.includes('dog') || lowerName.includes('puppy') || lowerName.includes('human') || lowerName.includes('face') || lowerName.includes('man') || lowerName.includes('woman') || lowerName.includes('castle') || lowerName.includes('vibrant') || lowerName.includes('fantasy') || lowerName.includes('render') || lowerName.includes('synthesis')),
-            isGenericName: !(lowerName.startsWith('img_') || lowerName.startsWith('dsc_') || lowerName.startsWith('pxl_')),
-            isWebResource: (lowerName.includes('.jpeg') || lowerName.includes('.png') || lowerName.includes('.webp') || name.length < 15)
+            // Refined: Only specific "AI Generation" or "Synthesis" triggers
+            isSubjectAI: (lowerName.includes('midjourney') || lowerName.includes('dall-e') || lowerName.includes('stable diffusion') || lowerName.includes('synthesis') || lowerName.includes('gan') || lowerName.includes('render') || lowerName.includes('fantasy')),
+            // Less punitive: Only treat as "Generic" if extremely short and random-looking
+            isGenericName: (name.length < 8 && !lowerName.startsWith('img_') && !lowerName.startsWith('dsc_')),
+            // Contextual: Social media/web formats are standard, not inherently suspicious
+            isWebResource: (lowerName.includes('.webp') || lowerName.includes('whatsapp') || lowerName.includes('discord'))
         };
 
         const gates = {
-            optical: (metaPatterns.isSubjectAI || metaPatterns.isWebResource) ? (Math.random() * 0.3 + 0.15) : 0.92,
-            structural: (metaPatterns.isSubjectAI || metaPatterns.isWebResource) ? (Math.random() * 0.2 + 0.2) : 0.95,
-            environmental: (lowerName.includes('castle') || lowerName.includes('sky')) ? 0.3 : 0.98,
-            semantic: (lowerName.includes('floating') || lowerName.includes('fantasy') || metaPatterns.isSubjectAI) ? 0.25 : 0.96,
-            metadata: metaPatterns.isGenericName ? 0.28 : 0.94,
-            fidelity: (metaPatterns.isSubjectAI || metaPatterns.isWebResource) ? 0.35 : 0.91
+            optical: (metaPatterns.isSubjectAI) ? (Math.random() * 0.3 + 0.15) : 0.96,
+            structural: (metaPatterns.isSubjectAI) ? (Math.random() * 0.2 + 0.2) : 0.97,
+            environmental: (lowerName.includes('sky_physics') || lowerName.includes('gravity_fail')) ? 0.3 : 0.98,
+            semantic: (lowerName.includes('impossible') || metaPatterns.isSubjectAI) ? 0.25 : 0.98,
+            metadata: metaPatterns.isGenericName ? 0.4 : 0.95,
+            fidelity: (metaPatterns.isSubjectAI) ? 0.35 : 0.94
         };
 
         const weights = { optical: 0.25, structural: 0.25, environmental: 0.1, semantic: 0.2, metadata: 0.05, fidelity: 0.15 };
@@ -70,7 +73,7 @@ export class ForensicsService {
 
         // ACCURACY BOOST & ZERO-TRUST: Any score below 90% is a flag in a security context.
         const failurePoints = Object.values(gates).filter(v => v < 0.6).length;
-        const isSimulatedDeepfake = (failurePoints >= 1 || (heuristicScore < 90 && !isGraphic)) || lowerName.includes('fake');
+        const isSimulatedDeepfake = (failurePoints >= 2 || (heuristicScore < 90 && !isGraphic)) || lowerName.includes('fake');
 
         // ADVERSARIAL SCAN
         const hasAdversarialNoise = lowerName.includes('noise') || lowerName.includes('mask') || (isSimulatedDeepfake && Math.random() > 0.7);
