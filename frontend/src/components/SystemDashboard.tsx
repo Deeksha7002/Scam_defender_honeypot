@@ -15,19 +15,33 @@ export const SystemDashboard: React.FC<SystemDashboardProps> = ({ activeThreats 
     const [enhancedMonitoring, setEnhancedMonitoring] = useState<{ region: string, active: boolean }>({ region: '', active: false });
 
     useEffect(() => {
+        // Fetch initially
+        fetchStats();
+
+        // live poll every 2 seconds
         const interval = setInterval(() => {
-            if (activeThreats > 20) {
-                // Crisis Mode Simulation
-                setCpuLoad(prev => Math.min(100, Math.max(85, prev + (Math.random() * 20 - 5)))); // High load 85-100%
-                setNetworkTraffic(prev => Math.min(1000, Math.max(500, prev + (Math.random() * 200 - 50)))); // Spike traffic
-            } else {
-                // Normal Mode
-                setCpuLoad(prev => Math.min(100, Math.max(5, prev + (Math.random() * 10 - 5))));
-                setNetworkTraffic(prev => Math.min(100, Math.max(10, prev + (Math.random() * 20 - 10))));
-            }
-        }, 1000);
+            fetchStats();
+        }, 2000);
         return () => clearInterval(interval);
-    }, [activeThreats]);
+    }, []);
+
+    const fetchStats = async () => {
+        try {
+            const res = await fetch('http://localhost:8000/api/stats');
+            if (res.ok) {
+                const data = await res.json();
+                // Map backend data to UI metrics
+                // 1 report ~ 10 "Network Units" for visualization
+                setNetworkTraffic(Math.max(45, data.reports_filed * 2));
+
+                // CPU load scales with reports
+                const activeReports = data.reports_filed || 0;
+                setCpuLoad(Math.min(100, 12 + (activeReports * 5)));
+            }
+        } catch (e) {
+            console.error("Dashboard sync failed", e);
+        }
+    };
 
     const handleRegionSelect = (regionName: string, threatLevel: string) => {
         if (threatLevel === 'HIGH') {

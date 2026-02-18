@@ -31,36 +31,43 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }, []);
 
     const login = async (username: string, password: string): Promise<boolean> => {
-        const users = JSON.parse(localStorage.getItem('registered_users') || '[]');
-        const user = users.find((u: any) => u.username === username && u.password === password);
+        try {
+            const res = await fetch('http://localhost:8000/api/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            });
 
-        if (user) {
-            const sessionUser = { id: user.id, username: user.username };
-            setCurrentUser(sessionUser);
-            sessionStorage.setItem('active_session', JSON.stringify(sessionUser));
-            return true;
+            if (res.ok) {
+                await res.json(); // Consume body
+                const sessionUser = { id: 'admin-id', username }; // Mock ID for now
+                setCurrentUser(sessionUser);
+                sessionStorage.setItem('active_session', JSON.stringify(sessionUser));
+                return true;
+            }
+        } catch (e) {
+            console.error("Login failed", e);
         }
         return false;
     };
 
     const register = async (username: string, password: string): Promise<boolean> => {
-        const users = JSON.parse(localStorage.getItem('registered_users') || '[]');
+        try {
+            const res = await fetch('http://localhost:8000/api/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            });
 
-        if (users.find((u: any) => u.username === username)) {
-            return false; // User already exists
+            if (res.ok) {
+                await res.json();
+                // Auto login after register
+                return login(username, password);
+            }
+        } catch (e) {
+            console.error("Registration failed", e);
         }
-
-        const newUser = {
-            id: Math.random().toString(36).substring(2, 11),
-            username,
-            password // In a real app, this would be hashed
-        };
-
-        const updatedUsers = [...users, newUser];
-        localStorage.setItem('registered_users', JSON.stringify(updatedUsers));
-
-        // Auto-login after register
-        return login(username, password);
+        return false;
     };
 
     const logout = () => {

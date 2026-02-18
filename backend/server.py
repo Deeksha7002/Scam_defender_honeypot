@@ -55,15 +55,16 @@ def analyze_text(request: AnalysisRequest):
     """
     start_time = time.time()
     
-    # Simple reuse of agent classification logic for now
-    # In future, this could run heavier ML models
-    classification = agent._classify(request.text)
+    analysis_result = analyzer.analyze_behavior([{"role": "scammer", "content": request.text}])
+    score, categorization = analysis_result
     
     # Simulate processing delay for "Deep Scan" effect
     time.sleep(0.5) 
     
     return {
-        "classification": classification,
+        "classification": categorization,
+        "score": score,
+        "intent": analyzer.intent,
         "processing_time": time.time() - start_time,
         "verified": True
     }
@@ -151,6 +152,47 @@ def submit_report(report: ReportRequest):
         save_cases(cases)
     
     return {"status": "received", "case_id": f"CASE-{int(time.time())}"}
+
+# --- Auth Persistence ---
+USERS_FILE = "users.json"
+
+def load_users():
+    try:
+        if os.path.exists(USERS_FILE):
+            with open(USERS_FILE, "r") as f:
+                return json.load(f)
+    except Exception as e:
+        logging.error(f"Failed to load users: {e}")
+    # Default admin user if file missing
+    return {"admin": "password123"} 
+
+class LoginRequest(BaseModel):
+    username: str
+    password: str
+
+@app.post("/api/login")
+def login(creds: LoginRequest):
+    users = load_users()
+    if creds.username in users and users[creds.username] == creds.password:
+        return {"status": "success", "token": f"mock-token-{int(time.time())}"}
+    raise HTTPException(status_code=401, detail="Invalid credentials")
+
+def save_users(users):
+    try:
+        with open(USERS_FILE, "w") as f:
+            json.dump(users, f, indent=4)
+    except Exception as e:
+        logging.error(f"Failed to save users: {e}")
+
+@app.post("/api/register")
+def register(creds: LoginRequest):
+    users = load_users()
+    if creds.username in users:
+        raise HTTPException(status_code=400, detail="Operator ID already exists")
+    
+    users[creds.username] = creds.password
+    save_users(users)
+    return {"status": "created", "token": f"mock-token-{int(time.time())}"}
 
 if __name__ == "__main__":
     import uvicorn
