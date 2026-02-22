@@ -19,6 +19,7 @@ class User(Base):
     username = Column(String, unique=True, index=True)
     hashed_password = Column(String)
     role = Column(String, default="operator")
+    webauthn_credentials = Column(JSON, default=[]) # Store list of registered credentials
 
 class Case(Base):
     __tablename__ = "cases"

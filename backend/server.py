@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import FastAPI, HTTPException, Depends, Request
 from pydantic import BaseModel
 from typing import List, Optional, Dict, Any
 from datetime import datetime, timedelta
@@ -254,21 +254,29 @@ from webauthn.helpers.structs import (
     AuthenticatorAssertionResponse,
 )
 
-RP_ID = "localhost"
-RP_NAME = "Scam Defender"
-ORIGIN = "http://localhost:5173"
+# Helper to get the current RP ID and Origin from the request
+def get_webauthn_config(request: Request):
+    host = request.headers.get("host", "localhost:5173")
+    hostname = host.split(":")[0]
+    # For WebAuthn, we need the base domain (rp_id) and the full origin
+    # We'll allow localhost, 127.0.0.1, and network IPs
+    protocol = "https" if request.url.scheme == "https" else "http"
+    return hostname, f"{protocol}://{host}"
 
-# In-memory store for challenges (In prod use Redis)
+RP_NAME = "Scam Defender"
+
+# In-memory store for challenges
 challenges = {} 
 
 @app.post("/api/auth/biometric/register/start")
-def register_bio_start(username: str, db: Session = Depends(get_db)):
+def register_bio_start(username: str, request: Request, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.username == username).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
+    rp_id, origin = get_webauthn_config(request)
     options = generate_registration_options(
-        rp_id=RP_ID,
+        rp_id=rp_id,
         rp_name=RP_NAME,
         user_id=str(user.id).encode(),
         user_name=user.username,
@@ -285,7 +293,7 @@ def register_bio_start(username: str, db: Session = Depends(get_db)):
     return json.loads(options_to_json(options))
 
 @app.post("/api/auth/biometric/register/finish")
-def register_bio_finish(response: Dict[str, Any], username: str, db: Session = Depends(get_db)):
+def register_bio_finish(response: Dict[str, Any], username: str, request: Request, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.username == username).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -306,11 +314,12 @@ def register_bio_finish(response: Dict[str, Any], username: str, db: Session = D
             type=response.get("type", "public-key"),
         )
 
+        rp_id, origin = get_webauthn_config(request)
         verification = verify_registration_response(
             credential=credential,
             expected_challenge=challenge,
-            expected_origin=ORIGIN,
-            expected_rp_id=RP_ID,
+            expected_origin=origin,
+            expected_rp_id=rp_id,
             require_user_verification=False,
         )
 
@@ -332,7 +341,7 @@ def register_bio_finish(response: Dict[str, Any], username: str, db: Session = D
         raise HTTPException(status_code=400, detail=f"Registration failed: {str(e)}")
 
 @app.post("/api/auth/biometric/login/start")
-def login_bio_start(username: str, db: Session = Depends(get_db)):
+def login_bio_start(username: str, request: Request, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.username == username).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -350,8 +359,9 @@ def login_bio_start(username: str, db: Session = Depends(get_db)):
         except Exception:
             pass
 
+    rp_id, origin = get_webauthn_config(request)
     options = generate_authentication_options(
-        rp_id=RP_ID,
+        rp_id=rp_id,
         allow_credentials=allow_credentials,
         user_verification=UserVerificationRequirement.PREFERRED,
     )
@@ -360,7 +370,7 @@ def login_bio_start(username: str, db: Session = Depends(get_db)):
     return json.loads(options_to_json(options))
 
 @app.post("/api/auth/biometric/login/finish")
-def login_bio_finish(response: Dict[str, Any], username: str, db: Session = Depends(get_db)):
+def login_bio_finish(response: Dict[str, Any], username: str, request: Request, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.username == username).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -396,8 +406,8 @@ def login_bio_finish(response: Dict[str, Any], username: str, db: Session = Depe
         verification = verify_authentication_response(
             credential=credential,
             expected_challenge=challenge,
-            expected_origin=ORIGIN,
-            expected_rp_id=RP_ID,
+            expected_origin=origin,
+            expected_rp_id=rp_id,
             credential_public_key=base64url_to_bytes(matched_cred["credential_public_key"]),
             credential_current_sign_count=matched_cred["sign_count"],
             require_user_verification=False,
@@ -419,10 +429,11 @@ def login_bio_finish(response: Dict[str, Any], username: str, db: Session = Depe
 DISCOVER_CHALLENGE_KEY = "__DISCOVER__"
 
 @app.post("/api/auth/biometric/discover/start")
-def discover_bio_start():
+def discover_bio_start(request: Request):
     """Generate a challenge with no allow_credentials — browser will offer all saved passkeys."""
+    rp_id, origin = get_webauthn_config(request)
     options = generate_authentication_options(
-        rp_id=RP_ID,
+        rp_id=rp_id,
         allow_credentials=[],   # empty = discoverable / resident key
         user_verification=UserVerificationRequirement.PREFERRED,
     )
@@ -430,7 +441,7 @@ def discover_bio_start():
     return json.loads(options_to_json(options))
 
 @app.post("/api/auth/biometric/discover/finish")
-def discover_bio_finish(response: Dict[str, Any], db: Session = Depends(get_db)):
+def discover_bio_finish(response: Dict[str, Any], request: Request, db: Session = Depends(get_db)):
     """Verify the assertion and identify the user via userHandle."""
     challenge = challenges.get(DISCOVER_CHALLENGE_KEY)
     if not challenge:
@@ -478,8 +489,8 @@ def discover_bio_finish(response: Dict[str, Any], db: Session = Depends(get_db))
         verification = verify_authentication_response(
             credential=credential,
             expected_challenge=challenge,
-            expected_origin=ORIGIN,
-            expected_rp_id=RP_ID,
+            expected_origin=origin,
+            expected_rp_id=rp_id,
             credential_public_key=base64url_to_bytes(matched_cred["credential_public_key"]),
             credential_current_sign_count=matched_cred["sign_count"],
             require_user_verification=False,

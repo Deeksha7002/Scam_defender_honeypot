@@ -8,6 +8,7 @@ uvicorn
 pydantic
 python-jose[cryptography]
 passlib[bcrypt]
+webauthn
 sqlalchemy
 bcrypt
 
