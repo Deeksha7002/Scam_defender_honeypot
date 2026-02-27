@@ -1,7 +1,7 @@
 from fastapi import FastAPI, HTTPException, Depends, Request
 from pydantic import BaseModel
 from typing import List, Optional, Dict, Any
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import logging
 import time
 import json
@@ -103,40 +103,62 @@ def get_or_create_stats(db: Session):
 @app.get("/api/stats")
 def get_stats(db: Session = Depends(get_db)):
     # Calculate time-based stats dynamically from Cases
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     day_ago = now - timedelta(days=1)
-    week_ago = now - timedelta(minutes=10080) # 7 days
+    week_ago = now - timedelta(days=7)
     month_ago = now - timedelta(days=30)
     
-    # helper to filter and count
-    def count_since(time_threshold):
-        # We fetch all and filter in python because storing timestamp as string makes SQL date math annoying in generic SQLite
-        # Ideally timestamp should be datetime object in DB, but for now this works given low volume
+    # helper to filter and count + breakdown + unique scammers
+    def get_stats_for_range(time_threshold):
         cases = db.query(Case).all()
         count = 0
+        breakdown = {t: 0 for t in ["ROMANCE", "CRYPTO", "JOB", "IMPERSONATION", "LOTTERY", "TECHNICAL_SUPPORT", "AUTHORITY", "OTHER"]}
+        scammers = set()
+        
         for c in cases:
             try:
                 # Handle ISO format Z (trailing Z)
-                c_time = datetime.fromisoformat(c.timestamp.replace('Z', '+00:00'))
-                # If c_time is offset-aware and time_threshold is naive, make time_threshold aware
-                if c_time.tzinfo is not None and time_threshold.tzinfo is None:
-                    time_threshold = time_threshold.replace(tzinfo=datetime.timezone.utc)
+                ts_str = c.timestamp.replace('Z', '+00:00')
+                c_time = datetime.fromisoformat(ts_str)
+                
+                # Ensure c_time is aware if it's not
+                if c_time.tzinfo is None:
+                    c_time = c_time.replace(tzinfo=timezone.utc)
                 
                 if c_time > time_threshold:
                     count += 1
-            except Exception:
-                pass # Ignore malformed dates
-        return count
+                    ctype = c.threat_level.upper() if c.threat_level else "OTHER"
+                    if ctype in breakdown:
+                        breakdown[ctype] += 1
+                    else:
+                        breakdown["OTHER"] += 1
+                    
+                    if c.scammer_name:
+                        scammers.add(c.scammer_name)
+            except Exception as e:
+                logging.error(f"Error parsing timestamp {c.timestamp}: {e}")
+                pass 
+        return count, breakdown, len(scammers)
 
+    t_count, t_types, t_scammers = get_stats_for_range(day_ago)
+    w_count, w_types, w_scammers = get_stats_for_range(week_ago)
+    m_count, m_types, m_scammers = get_stats_for_range(month_ago)
+    
     stats = get_or_create_stats(db)
     
     return {
         "reports_filed": stats.reports_filed,
         "scams_detected": stats.scams_detected,
         "types": stats.types_json,
-        "today": count_since(day_ago),
-        "week": count_since(week_ago),
-        "month": count_since(month_ago)
+        "today": t_count,
+        "week": w_count,
+        "month": m_count,
+        "today_types": t_types,
+        "week_types": w_types,
+        "month_types": m_types,
+        "today_scammers": t_scammers,
+        "week_scammers": w_scammers,
+        "month_scammers": m_scammers
     }
 
 # --- Cases Management ---
@@ -198,15 +220,23 @@ def submit_report(report: ReportRequest, db: Session = Depends(get_db)):
 @app.post("/api/login")
 def login(creds: LoginRequest, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.username == creds.username).first()
+    
+    # If user doesn't exist in DB, look them up in users.json to auto-create
     if not user:
-        # Check for default admin creation on first run if DB is empty
-        if creds.username == "admin" and creds.password == "password123":
-             # Create default admin if it doesn't exist
-             hashed_pw = security.get_password_hash("password123")
-             admin_user = User(username="admin", hashed_password=hashed_pw, role="admin")
-             db.add(admin_user)
-             db.commit()
-             user = admin_user
+        try:
+            with open("users.json", "r") as f:
+                valid_users = json.load(f)
+        except Exception as e:
+            logging.error(f"Could not load users.json: {e}")
+            valid_users = {"admin": "password123"}
+            
+        if creds.username in valid_users and creds.password == valid_users[creds.username]:
+            hashed_pw = security.get_password_hash(creds.password)
+            role = "admin" if creds.username == "admin" else "operator"
+            new_user = User(username=creds.username, hashed_password=hashed_pw, role=role)
+            db.add(new_user)
+            db.commit()
+            user = new_user
         else:
             raise HTTPException(status_code=401, detail="Invalid credentials")
     

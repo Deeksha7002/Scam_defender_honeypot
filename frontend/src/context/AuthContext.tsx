@@ -39,8 +39,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             });
 
             if (res.ok) {
-                await res.json(); // Consume body
-                const sessionUser = { id: 'admin-id', username }; // Mock ID for now
+                const data = await res.json();
+                const token = data.token;
+
+                // Keep token for future requests
+                localStorage.setItem('token', token);
+
+                // Very crude JWT decode: sub is username
+                let payload = { sub: username };
+                try {
+                    const base64Url = token.split('.')[1];
+                    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                    const jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function (c) {
+                        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+                    }).join(''));
+                    payload = JSON.parse(jsonPayload);
+                } catch (e) {
+                    console.error("Token parse error", e);
+                }
+
+                const sessionUser = { id: payload.sub, username: payload.sub };
                 setCurrentUser(sessionUser);
                 sessionStorage.setItem('active_session', JSON.stringify(sessionUser));
                 return true;

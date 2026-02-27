@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { ShieldCheck, Lock, Fingerprint, EyeOff, Eye, AlertTriangle, ScanFace, UserPlus } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import '../index.css';
@@ -99,57 +99,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = () => {
     const [error, setError] = useState<string | null>(null);
     const [statusMsg, setStatusMsg] = useState<string | null>(null);
 
-    // ── Auto-trigger biometric on page load ──────────────────────────────────
-    useEffect(() => {
-        if (!window.PublicKeyCredential) return;
-        const autoLogin = async () => {
-            try {
-                // 1. Get discoverable challenge (no username needed)
-                const startRes = await fetch('http://localhost:8000/api/auth/biometric/discover/start', { method: 'POST' });
-                if (!startRes.ok) return;
-                const rawOptions = await startRes.json();
-                const requestOptions = prepareAuthenticationOptions(rawOptions);
-
-                // 2. Prompt OS biometric — user sees finger/face prompt instantly
-                const assertion = await navigator.credentials.get({
-                    publicKey: requestOptions,
-                    mediation: 'optional' as CredentialMediationRequirement,
-                } as any) as PublicKeyCredential;
-                if (!assertion) return;
-
-                const assResponse = assertion.response as AuthenticatorAssertionResponse;
-
-                // 3. Verify with backend (identifies user from userHandle)
-                const finishRes = await fetch('http://localhost:8000/api/auth/biometric/discover/finish', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        id: assertion.id,
-                        rawId: bufferToBase64url(assertion.rawId),
-                        type: assertion.type,
-                        response: {
-                            clientDataJSON: bufferToBase64url(assResponse.clientDataJSON),
-                            authenticatorData: bufferToBase64url(assResponse.authenticatorData),
-                            signature: bufferToBase64url(assResponse.signature),
-                            userHandle: assResponse.userHandle ? bufferToBase64url(assResponse.userHandle) : null,
-                        },
-                    }),
-                });
-
-                const data = await finishRes.json();
-                if (finishRes.ok && data.token) {
-                    localStorage.setItem('token', data.token);
-                    window.location.reload();
-                }
-            } catch (e: any) {
-                // Silently ignore — user can still use password login
-                if (e.name !== 'NotAllowedError') {
-                    console.debug('Auto biometric skipped:', e.message);
-                }
-            }
-        };
-        autoLogin();
-    }, []);
+    // ── Removed Auto-trigger biometric on page load to prevent unwanted dialogs ──
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
