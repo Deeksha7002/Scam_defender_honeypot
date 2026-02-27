@@ -9,8 +9,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy all backend source code
 COPY backend/ .
 
-# Create the data directory for SQLite persistence
-RUN mkdir -p /data
+# Create data directory and set database path
+RUN mkdir -p /app/data
+ENV DATABASE_URL="sqlite:////app/data/scam_honeypot.db"
 
 # Expose the port Render provides via $PORT
 EXPOSE 8000
