@@ -14,11 +14,11 @@ class ScamAnalyzer:
         
         # Behavioral Heuristic Keywords (Weighted)
         self.behavioral_keywords = {
-            "urgency": ["urgent", "immediately", "now", "hurry", "fast", "seconds", "expires", "deadline", "today", "quick"],
-            "pressure": ["police", "lawsuit", "jail", "arrest", "warrant", "legal", "court", "suspended", "blocked", "banned"],
-            "financial": ["money", "card", "bank", "transfer", "wire", "deposit", "payment", "fee", "charge", "cost", "dollar", "rupee", "usd", "cash"],
-            "data": ["password", "pin", "otp", "code", "credential", "login", "ssn", "identity", "account"],
-            "demand": ["send", "pay", "give", "share", "tell", "click", "download", "install", "submit"]
+            "urgency": ["urgent", "immediately", "now", "hurry", "fast", "seconds", "expires", "deadline", "today", "quick", "asap", "limited", "soon"],
+            "pressure": ["police", "lawsuit", "jail", "arrest", "warrant", "legal", "court", "suspended", "blocked", "banned", "fbi", "interpol", "frozen"],
+            "financial": ["money", "card", "bank", "transfer", "wire", "deposit", "payment", "fee", "charge", "cost", "dollar", "rupee", "usd", "cash", "crypto", "btc", "wallet", "usdt", "eth", "coin"],
+            "data": ["password", "pin", "otp", "code", "credential", "login", "ssn", "identity", "account", "social", "verification", "phrase", "seed"],
+            "demand": ["send", "pay", "give", "share", "tell", "click", "download", "install", "submit", "verify", "confirm", "provide"]
         }
         
     def analyze_behavior(self, history):
@@ -103,14 +103,14 @@ class ScamAnalyzer:
             return "AUTHORITY_IMPERSONATION"
             
         # --- CRYPTO ---
-        # "Invest context": invest, yield, profit + crypto, bitcoin, btc
-        crypto_pattern = r"(invest|yield|profit|return|mining).{0,30}(crypto|bitcoin|btc|eth|usdt)"
+        # "Invest context": invest, yield, profit, pump, moon, airdrop + crypto, bitcoin, btc, wallet
+        crypto_pattern = r"(invest|yield|profit|return|mining|airdrop|pump|moon|web3|wallet).{0,30}(crypto|bitcoin|btc|eth|usdt|solana|coin|token|address)"
         if re.search(crypto_pattern, text):
             return "CRYPTO_SCAM"
 
         # --- LOTTERY / PRIZE ---
-        # "Lottery context": won, claim, prize + lottery, reward, cash
-        lottery_pattern = r"(won|claim|receive|awarded).{0,30}(lottery|prize|reward|cash|money|gift)"
+        # "Lottery context": won, claim, prize, sweepstakes, giveaway + lottery, reward, cash, iphone
+        lottery_pattern = r"(won|claim|receive|awarded|selected|winner).{0,30}(lottery|prize|reward|cash|money|gift|giveaway|sweepstakes|iphone|tesla)"
         if re.search(lottery_pattern, text):
             return "LOTTERY_SCAM"
             

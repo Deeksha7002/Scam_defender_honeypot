@@ -1,5 +1,6 @@
 import { PDFGenerator } from './PDFGenerator';
 import type { IncidentReport, CaseFile } from './types';
+import { API_BASE_URL } from './config';
 
 export class CyberCellService {
     private static MOCK_ENDPOINT = 'https://cybercell.gov.mock/api/v1/report';
@@ -54,7 +55,7 @@ export class CyberCellService {
 
             // REAL BACKEND INTEGRATION
             try {
-                fetch('http://localhost:8000/api/report', {
+                fetch(`${API_BASE_URL}/api/report`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(evidenceJson)
@@ -81,7 +82,7 @@ export class CyberCellService {
      */
     static async getAllCases(): Promise<CaseFile[]> {
         try {
-            const res = await fetch('http://localhost:8000/api/cases');
+            const res = await fetch(`${API_BASE_URL}/api/cases`);
             if (res.ok) {
                 const cases = await res.json();
                 console.log('[CyberCellService] 📂 Loaded persistent cases:', cases.length);

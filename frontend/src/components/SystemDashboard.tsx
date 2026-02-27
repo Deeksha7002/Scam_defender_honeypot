@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Activity, Cpu, Shield, Wifi, Server, Zap, Globe, Lock, AlertTriangle } from 'lucide-react';
 import { GlobalThreatMap } from './GlobalThreatMap';
 import { type GeoLocation } from '../lib/types';
+import { API_BASE_URL } from '../lib/config';
 
 interface SystemDashboardProps {
     activeThreats?: number;
@@ -27,7 +28,7 @@ export const SystemDashboard: React.FC<SystemDashboardProps> = ({ activeThreats 
 
     const fetchStats = async () => {
         try {
-            const res = await fetch('http://localhost:8000/api/stats');
+            const res = await fetch(`${API_BASE_URL}/api/stats`);
             if (res.ok) {
                 const data = await res.json();
                 // Map backend data to UI metrics

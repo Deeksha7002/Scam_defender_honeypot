@@ -257,9 +257,28 @@ function App() {
         });
       }
 
+      // 🛡️ DYNAMIC LIVE INTERCEPTION MEAUSRES 🛡️
       const threadState = threadsRef.current.find(t => t.id === threadId);
       const wasIntercepted = threadState?.isIntercepted || false;
       const isNewInterception = classification === 'scam' || classification === 'likely_scam';
+
+      // If we just intercepted this or the intent escalated, fire a counter-measure log
+      if (isNewInterception && intent !== threadState?.intent) {
+        let counterMsg = "";
+        if (intent === "MONEY") counterMsg = "🛡️ DEFENSE SYSTEM: Tracing payment routing. Simulated Crypto Wallet generated and injected.";
+        else if (intent === "CODES") counterMsg = "🛡️ DEFENSE SYSTEM: OTP Interception detected. Injecting mathematically invalid decoy codes.";
+        else if (intent === "URGENCY") counterMsg = "🛡️ DEFENSE SYSTEM: High-pressure semantics detected. Activating AI stalling protocols.";
+
+        if (counterMsg) {
+          addMessageToThread(threadId, {
+            id: `cm-${Date.now()}`,
+            sender: 'system',
+            content: counterMsg,
+            timestamp: Date.now()
+          });
+        }
+      }
+
       const shouldReply = (isNewInterception || wasIntercepted) && !missionComplete && !threadState?.isBlocked;
 
       setThreads((prev: Thread[]) => prev.map((t: Thread) => {

@@ -22,7 +22,11 @@ export const IntelligenceReport: React.FC = () => {
 
     if (!summary) return <div>Loading Intelligence...</div>;
 
-    const maxCount = Math.max(...Object.values(summary.byType), 1);
+    const activeByType = range === 'today' ? (summary.today_types || summary.byType) :
+        range === 'week' ? (summary.week_types || summary.byType) :
+            (summary.month_types || summary.byType);
+
+    const maxCount = Math.max(...Object.values(activeByType), 1);
 
     return (
         <div className="intelligence-report" style={{ color: 'white', padding: '1rem' }}>
@@ -64,7 +68,11 @@ export const IntelligenceReport: React.FC = () => {
                     <div className="stat-icon text-blue"><Users size={18} /></div>
                     <div className="stat-content">
                         <div className="stat-label">Unique Scammers</div>
-                        <div className="stat-value">{summary.uniqueScammers}</div>
+                        <div className="stat-value">
+                            {range === 'today' ? (summary.today_scammers ?? summary.uniqueScammers) :
+                                range === 'week' ? (summary.week_scammers ?? summary.uniqueScammers) :
+                                    (summary.month_scammers ?? summary.uniqueScammers)}
+                        </div>
                     </div>
                 </div>
                 <div className="stat-card">
@@ -80,7 +88,7 @@ export const IntelligenceReport: React.FC = () => {
                 <div className="category-split">
                     <h3 style={{ fontSize: '0.9rem', color: '#94a3b8', marginBottom: '1rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Breakdown by Type</h3>
                     <div className="chart-container" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                        {Object.entries(summary.byType).map(([type, count]) => (
+                        {Object.entries(activeByType).map(([type, count]) => (
                             <div key={type} className="chart-row" style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                                 <div style={{ width: '120px', fontSize: '0.75rem', color: '#cbd5e1' }}>{type}</div>
                                 <div style={{ flex: 1, height: '8px', background: 'rgba(255,255,255,0.05)', borderRadius: '4px', position: 'relative' }}>

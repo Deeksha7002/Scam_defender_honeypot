@@ -1,4 +1,5 @@
 import type { ScamRecord, IntelligenceSummary } from './types';
+import { API_BASE_URL } from './config';
 
 export class IntelligenceService {
     private static records: ScamRecord[] = [];
@@ -16,7 +17,7 @@ export class IntelligenceService {
 
     static async syncWithBackend(): Promise<void> {
         try {
-            const res = await fetch('http://localhost:8000/api/stats');
+            const res = await fetch(`${API_BASE_URL}/api/stats`);
             if (res.ok) {
                 this.backendStats = await res.json();
                 console.log('[IntelligenceService] 📊 Synced stats from backend:', this.backendStats);
@@ -38,9 +39,9 @@ export class IntelligenceService {
         const backendTypes = this.backendStats?.types || {};
 
         const summary: IntelligenceSummary = {
-            today: this.backendStats?.today || localTodays,
-            week: this.backendStats?.week || backendTotal,
-            month: this.backendStats?.month || backendTotal,
+            today: this.backendStats?.today ?? localTodays,
+            week: this.backendStats?.week ?? backendTotal,
+            month: this.backendStats?.month ?? backendTotal,
             byType: {
                 ROMANCE: (backendTypes['ROMANCE'] || 0),
                 CRYPTO: (backendTypes['CRYPTO'] || 0),
@@ -49,8 +50,14 @@ export class IntelligenceService {
                 LOTTERY: (backendTypes['LOTTERY'] || 0),
                 TECHNICAL_SUPPORT: (backendTypes['TECHNICAL_SUPPORT'] || 0),
                 AUTHORITY: (backendTypes['AUTHORITY'] || 0),
-                OTHER: (backendTypes['OTHER'] || backendTypes['SCAM'] || 0) // Fold generic SCAM into OTHER
+                OTHER: (backendTypes['OTHER'] || backendTypes['SCAM'] || 0)
             },
+            today_types: this.backendStats?.today_types,
+            week_types: this.backendStats?.week_types,
+            month_types: this.backendStats?.month_types,
+            today_scammers: this.backendStats?.today_scammers,
+            week_scammers: this.backendStats?.week_scammers,
+            month_scammers: this.backendStats?.month_scammers,
             uniqueScammers: new Set(this.records.map(r => r.senderName)).size + Math.floor(backendTotal * 0.8),
             repeatedIdentifiers: this.getRepeatedIdentifiers()
         };

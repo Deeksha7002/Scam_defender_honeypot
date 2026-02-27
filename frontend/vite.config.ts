@@ -5,6 +5,15 @@ import { VitePWA } from 'vite-plugin-pwa'
 // https://vite.dev/config/
 export default defineConfig({
   base: process.env.VITE_BASE || '/',
+  server: {
+    host: true, // Listens on all local IPs (0.0.0.0)
+    proxy: {
+      '/api': {
+        target: 'http://127.0.0.1:8000',
+        changeOrigin: false,
+      }
+    }
+  },
   plugins: [
     react(),
     VitePWA({

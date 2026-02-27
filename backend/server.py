@@ -224,7 +224,8 @@ def login(creds: LoginRequest, db: Session = Depends(get_db)):
     # If user doesn't exist in DB, look them up in users.json to auto-create
     if not user:
         try:
-            with open("users.json", "r") as f:
+            users_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "users.json")
+            with open(users_path, "r") as f:
                 valid_users = json.load(f)
         except Exception as e:
             logging.error(f"Could not load users.json: {e}")

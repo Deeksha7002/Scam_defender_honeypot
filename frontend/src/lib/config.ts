@@ -238,3 +238,6 @@ export const SENSITIVE_PATTERNS: Record<string, RegExp> = {
 export const UNSAFE_KEYWORDS = [
     "send money", "transfer", "bank account", "password", "login", "otp", "pin", "cvv"
 ];
+
+// Dynamically resolve the backend URL — relative requests are proxied via Vite/Nginx
+export const API_BASE_URL = import.meta.env.VITE_API_URL || '';

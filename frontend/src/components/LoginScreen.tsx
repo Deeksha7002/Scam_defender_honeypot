@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ShieldCheck, Lock, Fingerprint, EyeOff, Eye, AlertTriangle, ScanFace, UserPlus } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { API_BASE_URL } from '../lib/config';
 import '../index.css';
 
 interface LoginScreenProps {
@@ -55,7 +56,7 @@ function prepareAuthenticationOptions(options: any): PublicKeyCredentialRequestO
 async function enrollBiometrics(username: string): Promise<void> {
     // 1. Get registration options from backend
     const startRes = await fetch(
-        `http://localhost:8000/api/auth/biometric/register/start?username=${encodeURIComponent(username)}`,
+        `${API_BASE_URL}/api/auth/biometric/register/start?username=${encodeURIComponent(username)}`,
         { method: 'POST' }
     );
     if (!startRes.ok) throw new Error(await startRes.text());
@@ -70,7 +71,7 @@ async function enrollBiometrics(username: string): Promise<void> {
 
     // 3. Send real credential to backend for verification + storage
     const finishRes = await fetch(
-        `http://localhost:8000/api/auth/biometric/register/finish?username=${encodeURIComponent(username)}`,
+        `${API_BASE_URL}/api/auth/biometric/register/finish?username=${encodeURIComponent(username)}`,
         {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -172,7 +173,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = () => {
         try {
             // 1. Get authentication challenge from backend
             const startRes = await fetch(
-                `http://localhost:8000/api/auth/biometric/login/start?username=${encodeURIComponent(username)}`,
+                `${API_BASE_URL}/api/auth/biometric/login/start?username=${encodeURIComponent(username)}`,
                 { method: 'POST' }
             );
             if (!startRes.ok) {
@@ -190,7 +191,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = () => {
 
             // 3. Send to backend for signature verification
             const finishRes = await fetch(
-                `http://localhost:8000/api/auth/biometric/login/finish?username=${encodeURIComponent(username)}`,
+                `${API_BASE_URL}/api/auth/biometric/login/finish?username=${encodeURIComponent(username)}`,
                 {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -246,7 +247,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = () => {
 
         try {
             // 1. Verify password — only account owner can enroll biometrics
-            const verifyRes = await fetch('http://localhost:8000/api/login', {
+            const verifyRes = await fetch(`${API_BASE_URL}/api/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ username, password }),

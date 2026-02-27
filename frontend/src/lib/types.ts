@@ -40,7 +40,7 @@ export interface IOCs {
 }
 
 export interface FinancialIntel {
-    method: 'UPI' | 'IBAN' | 'ACH' | 'CRYPTO';
+    method: 'UPI' | 'IBAN' | 'ACH' | 'CRYPTO' | 'Wire Transfer' | 'CRYPTO WALLET';
     identifier: string;
     institution?: string;
     flagged?: boolean;
@@ -121,6 +121,12 @@ export interface IntelligenceSummary {
     byType: Record<ScamType, number>;
     uniqueScammers: number;
     repeatedIdentifiers: string[];
+    today_types?: Record<ScamType, number>;
+    week_types?: Record<ScamType, number>;
+    month_types?: Record<ScamType, number>;
+    today_scammers?: number;
+    week_scammers?: number;
+    month_scammers?: number;
 }
 
 export type MediaType = 'IMAGE' | 'AUDIO' | 'VIDEO';

@@ -1,0 +1,21 @@
+services:
+  backend:
+    build: ./backend
+    container_name: honeypot-backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - honeypot_db:/app
+    environment:
+      - PYTHONUNBUFFERED=1
+
+  frontend:
+    build: ./frontend
+    container_name: honeypot-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+
+volumes:
+  honeypot_db:

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 
 import { Shield, ShieldAlert, CheckCircle, AlertTriangle, Play, RefreshCw, Terminal, Search, Zap } from 'lucide-react';
+import { API_BASE_URL } from '../lib/config';
 
 export const DemoConsole: React.FC = () => {
     const [input, setInput] = useState('');
@@ -13,7 +14,7 @@ export const DemoConsole: React.FC = () => {
         setResult(null);
 
         try {
-            const res = await fetch('http://localhost:8000/api/analyze', {
+            const res = await fetch(`${API_BASE_URL}/api/analyze`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ text: input })

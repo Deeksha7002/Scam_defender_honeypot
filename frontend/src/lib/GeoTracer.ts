@@ -57,7 +57,7 @@ export class GeoTracer {
         const rand = Math.floor(Math.random() * 1000);
 
         if (region === "South Asia" || region === "India") {
-            const banks = ["okhdfcbank", "oksbi", "paytm", "apl"];
+            const banks = ["okhdfcbank", "oksbi", "paytm", "apl", "ybl"];
             const bank = banks[Math.floor(Math.random() * banks.length)];
             return {
                 method: 'UPI',
@@ -67,31 +67,37 @@ export class GeoTracer {
             };
         }
 
-        if (region === "Eastern Europe" || region === "Europe") {
+        if (region === "Eastern Europe" || region === "Europe" || region === "Russia") {
             return {
                 method: 'IBAN',
-                identifier: `DE${rand} 3000 0000 ${rand} ${rand}`,
-                institution: "Deutsche Bank AG",
+                identifier: `RO${rand} BTRL 0000 ${rand} ${rand}`,
+                institution: "Banca Transilvania",
                 flagged: true
             };
         }
 
         if (region === "USA" || region === "North America") {
             return {
-                method: 'ACH',
+                method: 'Wire Transfer',
                 identifier: `Routing: 021${rand} | Acct: 883${rand}`,
-                institution: "Chase Bank NA",
-                flagged: false
+                institution: "Bank of America",
+                flagged: true // Flagged aggressively for scam context
             };
         }
 
-        // Default to Crypto for others
-        const coins = ["BTC", "ETH", "USDT"];
+        // Crypto is the fallback for global operations (West Africa, SE Asia, unknown)
+        const coins = ["BTC", "ETH", "USDT", "SOL", "USDC"];
         const coin = coins[Math.floor(Math.random() * coins.length)];
+
+        let wallet = "";
+        if (coin === "BTC") wallet = `bc1q${Math.random().toString(36).substring(2, 15)}...${Math.random().toString(36).substring(2, 6)}`;
+        else if (coin === "SOL") wallet = `${Math.random().toString(36).substring(2, 10)}...${Math.random().toString(36).substring(2, 8)}`;
+        else wallet = `0x${Math.random().toString(16).substring(2, 10)}...${Math.random().toString(16).substring(2, 8)}`;
+
         return {
-            method: 'CRYPTO',
-            identifier: `0x${Math.random().toString(16).substr(2, 30)}`,
-            institution: `${coin} Wallet`,
+            method: 'CRYPTO WALLET',
+            identifier: wallet,
+            institution: `${coin} Network`,
             flagged: true
         };
     }
