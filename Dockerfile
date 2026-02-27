@@ -9,6 +9,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy all backend source code
 COPY backend/ .
 
+# Create the data directory for SQLite persistence
+RUN mkdir -p /data
+
 # Expose the port Render provides via $PORT
 EXPOSE 8000
 
