@@ -14,6 +14,7 @@ export const DeepfakeAnalyzer: React.FC = () => {
     const [logs, setLogs] = useState<ForensicLog[]>([]);
     const [progress, setProgress] = useState(0);
     const [scanLog, setScanLog] = useState<string[]>([]);
+    const [mediaUrl, setMediaUrl] = useState<string | null>(null);
 
     const fileRef = useRef<HTMLInputElement>(null);
 
@@ -52,6 +53,10 @@ export const DeepfakeAnalyzer: React.FC = () => {
     const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
+
+        // Generate a local blob URL for preview
+        const url = URL.createObjectURL(file);
+        setMediaUrl(url);
 
         setIsScanning(true);
         setResult(null);
@@ -173,6 +178,22 @@ export const DeepfakeAnalyzer: React.FC = () => {
                             </div>
                         </div>
 
+                        {mediaUrl && isScanning && (
+                            <div className="sys-card" style={{ padding: '0', overflow: 'hidden' }}>
+                                <div className="media-scanner-container">
+                                    {selectedType === 'VIDEO' ? (
+                                        <video src={mediaUrl} className="media-scanner-image" autoPlay loop muted />
+                                    ) : selectedType === 'AUDIO' ? (
+                                        <div style={{ height: '100px', display: 'flex', alignItems: 'center', color: 'var(--primary)' }}>[AUDIO WAVEFORM RENDER]</div>
+                                    ) : (
+                                        <img src={mediaUrl} className="media-scanner-image" alt="Scanned Media" />
+                                    )}
+                                    <div className="neural-grid-overlay" />
+                                    <div className="neural-scanline" />
+                                </div>
+                            </div>
+                        )}
+
                         {isScanning && (
                             <div className="sys-card" style={{ padding: '1.5rem', background: 'rgba(0,0,0,0.3)' }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
@@ -205,6 +226,23 @@ export const DeepfakeAnalyzer: React.FC = () => {
 
                         {result && (
                             <div className="sys-card" style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+
+                                {mediaUrl && (
+                                    <div className="media-scanner-container" style={{ minHeight: '150px' }}>
+                                        {selectedType === 'VIDEO' ? (
+                                            <video src={mediaUrl} className="media-scanner-image" controls />
+                                        ) : selectedType === 'IMAGE' ? (
+                                            <img src={mediaUrl} className="media-scanner-image" alt="Analyzed Media" style={{ filter: 'none' }} />
+                                        ) : null}
+                                        {/* Keep grid, but stop scanner when done */}
+                                        <div className="neural-grid-overlay" style={{ opacity: 0.5 }} />
+                                        {/* Highlight Anomalies overlay randomly across the grid if it's a deepfake */}
+                                        {(result.anomalyScore || 0) > 40 && (
+                                            <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', backgroundImage: 'radial-gradient(rgba(239,68,68,0.2) 2px, transparent 2px)', backgroundSize: '30px 30px', animation: 'scanline 5s linear infinite' }} />
+                                        )}
+                                    </div>
+                                )}
+
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
                                     <div>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.5rem', flexWrap: 'wrap' }}>

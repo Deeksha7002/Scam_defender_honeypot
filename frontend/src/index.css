@@ -1388,3 +1388,182 @@ body {
   background: repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.1) 0px, rgba(0, 0, 0, 0.1) 1px, transparent 1px, transparent 2px);
   pointer-events: none;
 }
+/* --- TRULY ADVANCED ANIMATIONS (UI/UX) --- */
+
+/* Smooth Auto-Scroll Behavior */
+.scroll-smooth {
+  scroll-behavior: smooth;
+}
+
+/* Typing Indicator Bouncing Dots */
+.typing-indicator {
+  display: inline-flex;
+  gap: 4px;
+  padding: 8px 12px;
+  background: var(--bg-hover);
+  border-radius: 16px;
+  align-items: center;
+}
+
+.typing-dot {
+  width: 6px;
+  height: 6px;
+  background: var(--text-secondary);
+  border-radius: 50%;
+  animation: typingBounce 1.4s infinite ease-in-out both;
+}
+
+.typing-dot:nth-child(1) { animation-delay: -0.32s; }
+.typing-dot:nth-child(2) { animation-delay: -0.16s; }
+
+@keyframes typingBounce {
+  0%, 80%, 100% { transform: scale(0); opacity: 0.5; }
+  40% { transform: scale(1); opacity: 1; }
+}
+
+/* Message Entrance Animation */
+.msg-enter-active {
+  animation: messageSlideIn 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+@keyframes messageSlideIn {
+  0% {
+    opacity: 0;
+    transform: translateY(15px) scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Matrix Decryption Glitch Effect */
+.decryption-glitch {
+  font-family: var(--font-mono);
+  color: var(--status-success);
+  position: relative;
+  display: inline-block;
+}
+
+.decryption-glitch::before {
+  content: attr(data-text);
+  position: absolute;
+  left: -2px;
+  text-shadow: 2px 0 var(--status-danger);
+  top: 0;
+  color: white;
+  background: black;
+  overflow: hidden;
+  clip: rect(0, 900px, 0, 0); 
+  animation: noise-anim 2s infinite linear alternate-reverse;
+}
+
+.decryption-glitch::after {
+  content: attr(data-text);
+  position: absolute;
+  left: 2px;
+  text-shadow: -2px 0 var(--primary);
+  top: 0;
+  color: white;
+  background: black;
+  overflow: hidden;
+  clip: rect(0, 900px, 0, 0); 
+  animation: noise-anim-2 3s infinite linear alternate-reverse;
+}
+
+@keyframes noise-anim {
+  0% { clip: rect(3px, 9999px, 86px, 0); }
+  5% { clip: rect(24px, 9999px, 86px, 0); }
+  10% { clip: rect(4px, 9999px, 57px, 0); }
+  15% { clip: rect(61px, 9999px, 81px, 0); }
+  20% { clip: rect(11px, 9999px, 20px, 0); }
+  25% { clip: rect(72px, 9999px, 2px, 0); }
+  30% { clip: rect(28px, 9999px, 69px, 0); }
+  35% { clip: rect(17px, 9999px, 63px, 0); }
+  40% { clip: rect(98px, 9999px, 34px, 0); }
+  45% { clip: rect(54px, 9999px, 84px, 0); }
+  50% { clip: rect(81px, 9999px, 16px, 0); }
+  55% { clip: rect(71px, 9999px, 89px, 0); }
+  60% { clip: rect(34px, 9999px, 69px, 0); }
+  65% { clip: rect(25px, 9999px, 92px, 0); }
+  70% { clip: rect(100px, 9999px, 94px, 0); }
+  75% { clip: rect(10px, 9999px, 12px, 0); }
+  80% { clip: rect(41px, 9999px, 92px, 0); }
+  85% { clip: rect(1px, 9999px, 37px, 0); }
+  90% { clip: rect(55px, 9999px, 80px, 0); }
+  95% { clip: rect(36px, 9999px, 17px, 0); }
+  100% { clip: rect(60px, 9999px, 2px, 0); }
+}
+
+@keyframes noise-anim-2 {
+  0% { clip: rect(69px, 9999px, 4px, 0); }
+  5% { clip: rect(98px, 9999px, 26px, 0); }
+  10% { clip: rect(47px, 9999px, 11px, 0); }
+  15% { clip: rect(4px, 9999px, 89px, 0); }
+  20% { clip: rect(68px, 9999px, 26px, 0); }
+  25% { clip: rect(48px, 9999px, 33px, 0); }
+  30% { clip: rect(69px, 9999px, 3px, 0); }
+  35% { clip: rect(28px, 9999px, 4px, 0); }
+  40% { clip: rect(59px, 9999px, 52px, 0); }
+  45% { clip: rect(94px, 9999px, 11px, 0); }
+  50% { clip: rect(16px, 9999px, 3px, 0); }
+  55% { clip: rect(79px, 9999px, 40px, 0); }
+  60% { clip: rect(60px, 9999px, 80px, 0); }
+  65% { clip: rect(9px, 9999px, 34px, 0); }
+  70% { clip: rect(21px, 9999px, 48px, 0); }
+  75% { clip: rect(14px, 9999px, 30px, 0); }
+  80% { clip: rect(79px, 9999px, 78px, 0); }
+  85% { clip: rect(18px, 9999px, 85px, 0); }
+  90% { clip: rect(44px, 9999px, 7px, 0); }
+  95% { clip: rect(26px, 9999px, 75px, 0); }
+  100% { clip: rect(69px, 9999px, 81px, 0); }
+}
+
+/* Neural Media Scanner Overlay */
+.media-scanner-container {
+  position: relative;
+  overflow: hidden;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.1);
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+}
+
+.media-scanner-image {
+  max-width: 100%;
+  max-height: 300px;
+  object-fit: contain;
+  filter: contrast(1.1) brightness(0.9);
+}
+
+.neural-scanline {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: var(--primary);
+  box-shadow: 0 0 15px var(--primary), 0 0 5px white;
+  opacity: 0.8;
+  animation: scan-vertical 2.5s ease-in-out infinite alternate;
+  z-index: 10;
+}
+
+.neural-grid-overlay {
+  position: absolute;
+  inset: 0;
+  background-image: 
+    linear-gradient(rgba(59, 130, 246, 0.1) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(59, 130, 246, 0.1) 1px, transparent 1px);
+  background-size: 20px 20px;
+  pointer-events: none;
+  z-index: 5;
+}
+
+@keyframes scan-vertical {
+  0% { top: -10%; }
+  100% { top: 105%; }
+}

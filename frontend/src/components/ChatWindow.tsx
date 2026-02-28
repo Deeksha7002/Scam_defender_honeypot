@@ -1,6 +1,6 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import type { Message } from '../lib/types';
-import { ShieldAlert, Bot, User } from 'lucide-react';
+import { ShieldAlert, Bot, User, LockKeyhole } from 'lucide-react';
 
 interface ChatWindowProps {
     messages: Message[];
@@ -8,35 +8,107 @@ interface ChatWindowProps {
 
 export const ChatWindow: React.FC<ChatWindowProps> = ({ messages }) => {
     const bottomRef = useRef<HTMLDivElement>(null);
+    const [typingScammers, setTypingScammers] = useState<Set<string>>(new Set());
+    const [displayedMessages, setDisplayedMessages] = useState<Message[]>([]);
 
+    // 1. Smooth Auto-Scroll Physics
     useEffect(() => {
-        bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+        if (bottomRef.current) {
+            // Using a slight timeout ensures the DOM has painted the new bubble
+            setTimeout(() => {
+                bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+            }, 50);
+        }
+    }, [displayedMessages, typingScammers]);
+
+    // 2. High-Fidelity Typing Animation Interceptor
+    useEffect(() => {
+        if (messages.length === 0) return;
+
+        const latestMessage = messages[messages.length - 1];
+
+        // If we already added it, ignore
+        if (displayedMessages.find(m => m.id === latestMessage.id)) return;
+
+        if (latestMessage.sender === 'scammer') {
+            // Simulate realistic typing delay based on message length
+            setTypingScammers(prev => new Set(prev).add(latestMessage.id));
+
+            // Calculate delay: 50ms per character, min 800ms, max 2500ms
+            const delay = Math.max(800, Math.min(2500, latestMessage.content.length * 50));
+
+            const timer = setTimeout(() => {
+                setTypingScammers(prev => {
+                    const next = new Set(prev);
+                    next.delete(latestMessage.id);
+                    return next;
+                });
+                setDisplayedMessages(prev => [...prev, latestMessage]);
+            }, delay);
+
+            return () => clearTimeout(timer);
+        } else {
+            // Agent messages and system countermeasures appear instantly
+            setDisplayedMessages(prev => [...prev, latestMessage]);
+        }
+    }, [messages, displayedMessages]);
+
+    // Initial Load - populate instantly if there's already history
+    useEffect(() => {
+        if (messages.length > 0 && displayedMessages.length === 0) {
+            setDisplayedMessages(messages);
+        }
     }, [messages]);
 
+    const isSystemAction = (msg: Message) => msg.sender === 'agent' && msg.content.startsWith('[');
+
     return (
-        <div className="chat-window">
-            {messages.length === 0 && (
-                <div className="empty-state">
-                    <p>No messages yet.</p>
-                    <p style={{ fontSize: '0.8em', opacity: 0.7 }}>Start the simulation to receive scam attempts.</p>
+        <div className="chat-window scroll-smooth">
+            {displayedMessages.length === 0 && Array.from(typingScammers).length === 0 && (
+                <div className="empty-state" style={{ opacity: 0.8, textAlign: 'center', marginTop: '2rem' }}>
+                    <p style={{ color: 'var(--text-primary)', fontWeight: 600 }}>Secure Channel Established.</p>
+                    <p style={{ fontSize: '0.85em', color: 'var(--text-secondary)' }}>Awaiting anomalous packet interception...</p>
                 </div>
             )}
 
-            {messages.map((msg) => {
+            {displayedMessages.map((msg) => {
                 const isAgent = msg.sender === 'agent';
+                const isSystem = isSystemAction(msg);
 
                 return (
                     <div
                         key={msg.id}
-                        className={`message-row ${isAgent ? 'agent' : 'scammer'}`}
+                        className={`message-row msg-enter-active ${isAgent ? 'agent' : 'scammer'}`}
+                        style={{ marginTop: isSystem ? '1rem' : '0' }}
                     >
-                        <div className="message-bubble">
-                            <div className="msg-header">
-                                {isAgent ? <Bot size={14} /> : <User size={14} />}
-                                <span>{msg.sender === 'agent' ? 'Honeypot' : 'Remote User'}</span>
-                            </div>
+                        <div
+                            className="message-bubble"
+                            style={isSystem ? {
+                                background: 'rgba(16, 185, 129, 0.1)',
+                                border: '1px solid var(--status-success)',
+                                color: 'var(--status-success)',
+                                fontFamily: 'var(--font-mono)',
+                                width: '100%',
+                                maxWidth: '100%',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.75rem',
+                                padding: '0.75rem 1rem'
+                            } : undefined}
+                        >
+                            {!isSystem && (
+                                <div className="msg-header">
+                                    {isAgent ? <Bot size={14} /> : <User size={14} />}
+                                    <span>{isAgent ? 'Scorpion AI' : 'Unknown Threat'}</span>
+                                    <span style={{ marginLeft: 'auto', fontSize: '10px', opacity: 0.5 }}>
+                                        {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                                    </span>
+                                </div>
+                            )}
 
-                            <div className="msg-content">
+                            {isSystem && <LockKeyhole size={16} />}
+
+                            <div className={`msg-content ${msg.content.includes('http') || msg.content.includes('.apk') ? 'decryption-glitch' : ''}`} data-text={msg.content}>
                                 {msg.content}
                             </div>
 
@@ -44,8 +116,8 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ messages }) => {
                                 <div key={i} className="attachment-container" style={{ marginTop: '0.5rem' }}>
                                     {at.isShredded ? (
                                         <div className="shredded-container" style={{
-                                            background: 'linear-gradient(45deg, #000, #1a1a1a)',
-                                            border: '2px dashed #ef4444',
+                                            background: 'linear-gradient(45deg, #050505, #111)',
+                                            border: '1px solid var(--status-danger)',
                                             padding: '1rem',
                                             borderRadius: '8px',
                                             display: 'flex',
@@ -55,24 +127,13 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ messages }) => {
                                             position: 'relative',
                                             overflow: 'hidden'
                                         }}>
-                                            <div className="shred-glitch" style={{ fontSize: '1.5rem', filter: 'grayscale(1) contrast(2)' }}>🧩</div>
-                                            <span style={{ color: '#ef4444', fontWeight: 'bold', fontSize: '0.7rem', letterSpacing: '1px' }}>
-                                                ☢️ MALICIOUS FILE SHREDDED
+                                            <div style={{ fontSize: '1.2rem' }}>☢️</div>
+                                            <span style={{ color: 'var(--status-danger)', fontWeight: 'bold', fontSize: '0.75rem', letterSpacing: '1px' }}>
+                                                PAYLOAD NEUTRALIZED
                                             </span>
-                                            <span style={{ color: '#94a3b8', fontSize: '0.6rem', textAlign: 'center' }}>
-                                                Forwarded to Cyber Cell. Millions of fragments unrecoverable.
+                                            <span style={{ color: 'var(--text-muted)', fontSize: '0.65rem', textAlign: 'center' }}>
+                                                Malicious signature shredded.
                                             </span>
-                                            {/* Shredding animation line */}
-                                            <div style={{
-                                                position: 'absolute',
-                                                top: 0,
-                                                left: 0,
-                                                width: '100%',
-                                                height: '2px',
-                                                background: '#ef4444',
-                                                boxShadow: '0 0 10px #ef4444',
-                                                animation: 'shred-scan 2s linear infinite'
-                                            }} />
                                         </div>
                                     ) : (
                                         <div className="media-preview" style={{ padding: '0.5rem', background: 'rgba(255,255,255,0.05)', borderRadius: '4px', fontSize: '0.8rem' }}>
@@ -83,16 +144,31 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ messages }) => {
                             ))}
 
                             {msg.isRedacted && (
-                                <div className="redacted-badge">
+                                <div className="redacted-badge" style={{ marginTop: '8px', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.7rem', color: 'var(--status-warning)', background: 'rgba(245, 158, 11, 0.1)', padding: '2px 6px', borderRadius: '4px', width: 'fit-content' }}>
                                     <ShieldAlert size={10} />
-                                    <span>Sensitive Data Redacted</span>
+                                    <span>PII Scrubbed</span>
                                 </div>
                             )}
                         </div>
                     </div>
                 );
             })}
-            <div ref={bottomRef} />
+
+            {/* Simulated Typing Indicator Bubbles */}
+            {Array.from(typingScammers).map(msgId => (
+                <div key={`typing-${msgId}`} className="message-row scammer msg-enter-active">
+                    <div className="message-bubble" style={{ background: 'transparent', boxShadow: 'none', padding: '0.5rem 0' }}>
+                        <div className="typing-indicator">
+                            <div className="typing-dot"></div>
+                            <div className="typing-dot"></div>
+                            <div className="typing-dot"></div>
+                        </div>
+                    </div>
+                </div>
+            ))}
+
+            {/* Invisible div to scroll to bottom securely */}
+            <div ref={bottomRef} style={{ height: '10px' }} />
         </div>
     );
 };
