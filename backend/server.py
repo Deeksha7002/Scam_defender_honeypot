@@ -477,6 +477,8 @@ def login_bio_finish(response: Dict[str, Any], username: str, request: Request, 
         raise HTTPException(status_code=400, detail="Credential not registered on this account")
 
     try:
+        rp_id, origin = get_webauthn_config(request)
+
         ass_response = response.get("response", {})
         credential = AuthenticationCredential(
             id=response["id"],
@@ -560,6 +562,8 @@ def discover_bio_finish(response: Dict[str, Any], request: Request, db: Session 
         raise HTTPException(status_code=400, detail="Credential not registered on this account")
 
     try:
+        rp_id, origin = get_webauthn_config(request)
+
         ass_response = response.get("response", {})
         credential = AuthenticationCredential(
             id=response["id"],
