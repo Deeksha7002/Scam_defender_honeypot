@@ -493,6 +493,28 @@ export const LoginScreen: React.FC<LoginScreenProps> = () => {
                         )}
                     </button>
 
+                    {/* Register / Login toggle — placed prominently right after main button */}
+                    <div style={{ textAlign: 'center', marginTop: '1rem' }}>
+                        <button
+                            type="button"
+                            onClick={() => { setIsRegistering(!isRegistering); setError(null); }}
+                            style={{
+                                background: 'none',
+                                border: '1px solid rgba(16, 185, 129, 0.4)',
+                                borderRadius: '8px',
+                                color: '#10b981',
+                                fontSize: '0.82rem',
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                                padding: '8px 16px',
+                                width: '100%',
+                                letterSpacing: '0.5px'
+                            }}
+                        >
+                            {isRegistering ? '← ALREADY HAVE AN ACCOUNT? LOGIN' : 'NEW USER? CREATE YOUR ACCOUNT →'}
+                        </button>
+                    </div>
+
                     {!isRegistering && (
                         <button
                             type="button"
@@ -550,22 +572,6 @@ export const LoginScreen: React.FC<LoginScreenProps> = () => {
                         </button>
                     )}
                 </form>
-
-                <div style={{ marginTop: '1.5rem', textAlign: 'center' }}>
-                    <button
-                        onClick={() => { setIsRegistering(!isRegistering); setError(null); }}
-                        style={{
-                            background: 'none',
-                            border: 'none',
-                            color: '#94a3b8',
-                            fontSize: '0.8rem',
-                            cursor: 'pointer',
-                            textDecoration: 'none'
-                        }}
-                    >
-                        {isRegistering ? 'ALREADY HAVE AN ACCOUNT? LOGIN' : 'NEW USER? CREATE YOUR ACCOUNT →'}
-                    </button>
-                </div>
             </div>
         </div>
     );
