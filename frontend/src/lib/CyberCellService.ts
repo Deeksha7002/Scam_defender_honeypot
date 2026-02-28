@@ -14,11 +14,11 @@ export class CyberCellService {
         const encoder = new TextEncoder();
         // Constant time pepper + dynamic salt
         const payload = encoder.encode(`SCAMDEF_PEPPER_${salt}_${data}`);
-        
+
         // Native WebCrypto API for secure SHA-256
         const hashBuffer = await crypto.subtle.digest('SHA-256', payload);
         const hashArray = Array.from(new Uint8Array(hashBuffer));
-        
+
         // Convert to secure hex string and truncate to 16 chars for DB efficiency
         const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
         return `anon_${hashHex.substring(0, 16)}`;
@@ -32,10 +32,12 @@ export class CyberCellService {
         console.log(`%c[CyberCellService] Auto-Reporting Incident: ${report.conversationId}`, 'color: #ef4444; font-weight: bold;');
 
         try {
+            const safeName = await this.hashPII(report.scammerName || "Unknown", report.conversationId);
+
             // 1. Prepare JSON Evidence Data (Matches server.py ReportRequest)
             const evidenceJson = {
                 conversationId: report.conversationId,
-                scammerName: report.scammerName || "Unknown",
+                scammerName: safeName,
                 platform: report.platform || "chat",
                 classification: report.classification,
                 confidenceScore: report.confidenceScore,
@@ -53,7 +55,7 @@ export class CyberCellService {
             // 2. Generate PDF Evidence
             const caseShim: CaseFile = {
                 id: report.conversationId,
-                scammerName: report.scammerName || "Identified Threat",
+                scammerName: safeName,
                 platform: report.platform || "chat",
                 status: 'closed',
                 threatLevel: report.classification,
