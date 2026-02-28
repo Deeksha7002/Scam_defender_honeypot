@@ -107,7 +107,7 @@ def read_root():
 
 @app.post("/api/analyze")
 @limiter.limit("20/minute")
-def analyze_text(payload: AnalysisRequest, request: Request):
+def analyze_text(payload: AnalysisRequest, request: Request, **kwargs):
     """
     Performs deep heuristic analysis on a text snippet.
     """
@@ -139,7 +139,7 @@ def get_or_create_stats(db: Session):
 
 @app.get("/api/stats")
 @limiter.limit("30/minute")
-def get_stats(request: Request, db: Session = Depends(get_db)):
+def get_stats(request: Request, db: Session = Depends(get_db), **kwargs):
     # Calculate time-based stats dynamically from Cases
     now = datetime.now(timezone.utc)
     day_ago = now - timedelta(days=1)
@@ -203,7 +203,7 @@ def get_stats(request: Request, db: Session = Depends(get_db)):
 
 @app.get("/api/cases")
 @limiter.limit("20/minute")
-def get_cases(request: Request, db: Session = Depends(get_db)):
+def get_cases(request: Request, db: Session = Depends(get_db), **kwargs):
     cases = db.query(Case).all()
     # Convert to list of dicts for JSON response
     return [{
@@ -220,7 +220,7 @@ def get_cases(request: Request, db: Session = Depends(get_db)):
 
 @app.post("/api/report")
 @limiter.limit("10/minute")
-def submit_report(report: ReportRequest, request: Request, db: Session = Depends(get_db)):
+def submit_report(report: ReportRequest, request: Request, db: Session = Depends(get_db), **kwargs):
     """
     Receives official scam reports from the frontend honeypot.
     """
@@ -259,7 +259,7 @@ def submit_report(report: ReportRequest, request: Request, db: Session = Depends
 
 @app.post("/api/login")
 @limiter.limit("5/minute")
-def login(creds: LoginRequest, request: Request, db: Session = Depends(get_db)):
+def login(creds: LoginRequest, request: Request, db: Session = Depends(get_db), **kwargs):
     user = db.query(User).filter(User.username == creds.username).first()
     
     # If user doesn't exist in DB, look them up in users.json to auto-create
@@ -290,7 +290,7 @@ def login(creds: LoginRequest, request: Request, db: Session = Depends(get_db)):
 
 @app.post("/api/register")
 @limiter.limit("5/minute")
-def register(creds: LoginRequest, request: Request, db: Session = Depends(get_db)):
+def register(creds: LoginRequest, request: Request, db: Session = Depends(get_db), **kwargs):
     logging.info(f"--- REGISTRATION ATTEMPT: {creds.username} ---")
     user = db.query(User).filter(User.username == creds.username).first()
     if user:
@@ -352,7 +352,7 @@ challenges = {}
 
 @app.post("/api/auth/biometric/register/start")
 @limiter.limit("5/minute")
-def register_bio_start(username: str, request: Request, db: Session = Depends(get_db)):
+def register_bio_start(username: str, request: Request, db: Session = Depends(get_db), **kwargs):
     user = db.query(User).filter(User.username == username).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -377,7 +377,7 @@ def register_bio_start(username: str, request: Request, db: Session = Depends(ge
 
 @app.post("/api/auth/biometric/register/finish")
 @limiter.limit("5/minute")
-def register_bio_finish(response: Dict[str, Any], username: str, request: Request, db: Session = Depends(get_db)):
+def register_bio_finish(response: Dict[str, Any], username: str, request: Request, db: Session = Depends(get_db), **kwargs):
     user = db.query(User).filter(User.username == username).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -426,7 +426,7 @@ def register_bio_finish(response: Dict[str, Any], username: str, request: Reques
 
 @app.post("/api/auth/biometric/login/start")
 @limiter.limit("5/minute")
-def login_bio_start(username: str, request: Request, db: Session = Depends(get_db)):
+def login_bio_start(username: str, request: Request, db: Session = Depends(get_db), **kwargs):
     user = db.query(User).filter(User.username == username).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -456,7 +456,7 @@ def login_bio_start(username: str, request: Request, db: Session = Depends(get_d
 
 @app.post("/api/auth/biometric/login/finish")
 @limiter.limit("5/minute")
-def login_bio_finish(response: Dict[str, Any], username: str, request: Request, db: Session = Depends(get_db)):
+def login_bio_finish(response: Dict[str, Any], username: str, request: Request, db: Session = Depends(get_db), **kwargs):
     user = db.query(User).filter(User.username == username).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
