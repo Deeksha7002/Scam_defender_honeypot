@@ -1,5 +1,5 @@
 ﻿import React, { useState, useEffect } from 'react';
-import { ShieldCheck, Lock, Fingerprint, EyeOff, Eye, AlertTriangle, ScanFace, UserPlus } from 'lucide-react';
+import { ShieldCheck, Lock, Fingerprint, EyeOff, Eye, AlertTriangle, UserPlus } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { API_BASE_URL } from '../lib/config';
 import '../index.css';
@@ -424,18 +424,6 @@ export const LoginScreen: React.FC<LoginScreenProps> = () => {
                             {isLoading ? <span>VERIFYING...</span> : <><Lock size={18} /><span>AUTHENTICATE</span></>}
                         </button>
                     </form>
-
-                    {/* OR divider */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', margin: '1.25rem 0' }}>
-                        <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.08)' }} />
-                        <span style={{ color: '#475569', fontSize: '0.75rem', letterSpacing: '1px' }}>OR</span>
-                        <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.08)' }} />
-                    </div>
-
-                    {/* Biometric button */}
-                    <button type="button" onClick={() => triggerBiometric(username)} disabled={isLoading} style={{ ...btnPrimary, background: 'transparent', border: '1px solid rgba(16,185,129,0.4)', color: '#10b981', marginTop: 0, cursor: isLoading ? 'not-allowed' : 'pointer' }}>
-                        {isLoading && statusMsg ? <span>{statusMsg}</span> : <><ScanFace size={20} /><span>FINGERPRINT / FACE ID</span></>}
-                    </button>
 
                     {/* Switch account */}
                     <button type="button" onClick={() => { localStorage.removeItem('scam_last_user'); localStorage.removeItem('scam_registered'); setMode('register'); }} style={{ ...btnGhost, color: '#475569', border: '1px solid rgba(71,85,105,0.25)', marginTop: '0.75rem', fontSize: '0.75rem' }}>
