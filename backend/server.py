@@ -14,6 +14,13 @@ from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 
+import sys
+
+# Ensure the backend directory is in the path for internal imports
+backend_dir = os.path.dirname(os.path.abspath(__file__))
+if backend_dir not in sys.path:
+    sys.path.append(backend_dir)
+
 # Internal Modules
 from analyzer import ScamAnalyzer
 from agent import HoneypotAgent
@@ -100,13 +107,13 @@ def read_root():
 
 @app.post("/api/analyze")
 @limiter.limit("20/minute")
-def analyze_text(request: AnalysisRequest, req: Request):
+def analyze_text(payload: AnalysisRequest, request: Request):
     """
     Performs deep heuristic analysis on a text snippet.
     """
     start_time = time.time()
     
-    analysis_result = analyzer.analyze_behavior([{"role": "scammer", "content": request.text}])
+    analysis_result = analyzer.analyze_behavior([{"role": "scammer", "content": payload.text}])
     score, threat_classification = analysis_result
     
     # Simulate processing delay for "Deep Scan" effect
@@ -132,7 +139,7 @@ def get_or_create_stats(db: Session):
 
 @app.get("/api/stats")
 @limiter.limit("30/minute")
-def get_stats(req: Request, db: Session = Depends(get_db)):
+def get_stats(request: Request, db: Session = Depends(get_db)):
     # Calculate time-based stats dynamically from Cases
     now = datetime.now(timezone.utc)
     day_ago = now - timedelta(days=1)
