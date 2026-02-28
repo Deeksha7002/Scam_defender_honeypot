@@ -291,8 +291,10 @@ def login(creds: LoginRequest, request: Request, db: Session = Depends(get_db)):
 @app.post("/api/register")
 @limiter.limit("5/minute")
 def register(creds: LoginRequest, request: Request, db: Session = Depends(get_db)):
+    logging.info(f"--- REGISTRATION ATTEMPT: {creds.username} ---")
     user = db.query(User).filter(User.username == creds.username).first()
     if user:
+        logging.warning(f"Registration Blocked: {creds.username} already exists in DB.")
         raise HTTPException(status_code=400, detail="Operator ID already exists")
     
     try:
