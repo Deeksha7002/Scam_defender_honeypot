@@ -287,10 +287,17 @@ from webauthn.helpers.structs import (
 
 # Helper to get the current RP ID and Origin from the request
 def get_webauthn_config(request: Request):
+    from urllib.parse import urlparse
+    # Use the Origin header if present — this is the FRONTEND's domain (e.g. Vercel)
+    # which is what WebAuthn credentials are bound to.
+    origin_header = request.headers.get("origin", "")
+    if origin_header:
+        parsed = urlparse(origin_header)
+        hostname = parsed.hostname or "localhost"
+        return hostname, origin_header
+    # Fallback: same-origin or local requests without an Origin header
     host = request.headers.get("host", "localhost:5173")
     hostname = host.split(":")[0]
-    # For WebAuthn, we need the base domain (rp_id) and the full origin
-    # We'll allow localhost, 127.0.0.1, and network IPs
     protocol = "https" if request.url.scheme == "https" else "http"
     return hostname, f"{protocol}://{host}"
 

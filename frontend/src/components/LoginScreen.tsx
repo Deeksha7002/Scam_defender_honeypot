@@ -158,6 +158,9 @@ export const LoginScreen: React.FC<LoginScreenProps> = () => {
                 const success = await login(username, password);
                 if (!success) {
                     setError('ACCESS DENIED: INVALID CREDENTIALS');
+                } else {
+                    // Remember username so auto-biometric can trigger next visit
+                    localStorage.setItem('scam_last_user', username);
                 }
             }
         } catch (err) {
