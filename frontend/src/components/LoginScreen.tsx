@@ -179,7 +179,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = () => {
 
     // â”€â”€ Biometric mode: auto-trigger on page load â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     useEffect(() => {
-        if (mode === 'biometric' && lastUser && window.PublicKeyCredential) {
+        if (mode !== 'register' && lastUser && window.PublicKeyCredential) {
             setTimeout(() => triggerBiometric(lastUser), 700);
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -446,3 +446,4 @@ export const LoginScreen: React.FC<LoginScreenProps> = () => {
         </div>
     );
 };
+
