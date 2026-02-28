@@ -91,7 +91,7 @@ async function enrollBiometrics(username: string): Promise<void> {
 
 export const LoginScreen: React.FC<LoginScreenProps> = () => {
     const { login, register } = useAuth();
-    const [isRegistering, setIsRegistering] = useState(false);
+    const [isRegistering, setIsRegistering] = useState(true);
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
