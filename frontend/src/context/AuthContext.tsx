@@ -86,8 +86,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
             if (res.ok) {
                 await res.json();
-                // Auto login after register
-                return login(username, password);
+                // Do NOT auto-login here — let the caller handle biometrics first
+                return true;
             } else {
                 let errorMsg = `Error [${res.status}]`;
                 try {

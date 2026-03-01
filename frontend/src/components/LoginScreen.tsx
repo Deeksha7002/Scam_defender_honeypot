@@ -260,21 +260,29 @@ export const LoginScreen: React.FC<LoginScreenProps> = () => {
         if (password !== confirmPassword) { setError('PASSWORDS DO NOT MATCH'); return; }
         setIsLoading(true);
         try {
+            // Step 1: Create account (no auto-login — keeps LoginScreen mounted)
             await register(username, password);
             localStorage.setItem('scam_registered', 'true');
             localStorage.setItem('scam_last_user', username);
+
+            // Step 2: Enroll biometrics while LoginScreen is still mounted
             if (window.PublicKeyCredential) {
                 try {
                     setStatusMsg('SETTING UP BIOMETRICS — FOLLOW DEVICE PROMPT...');
                     await enrollBiometrics(username);
-                    setStatusMsg('✓ BIOMETRICS ENROLLED — WELCOME!');
-                } catch {
-                    setStatusMsg('✓ ACCOUNT CREATED — LOGGING IN...');
+                    setStatusMsg('✓ BIOMETRICS ENROLLED!');
+                } catch (bioErr) {
+                    console.log('Biometric enrollment skipped:', bioErr);
+                    setStatusMsg('✓ ACCOUNT CREATED');
                 }
             }
-            // Always redirect to app after registration
-            await new Promise(r => setTimeout(r, 500));
-            window.location.reload();
+
+            // Step 3: NOW login (this sets isAuthenticated → enters the app)
+            setStatusMsg('LOGGING IN...');
+            const success = await login(username, password);
+            if (!success) {
+                setError('Account created but login failed — try logging in manually');
+            }
         } catch (e: any) {
             setError(e.message || 'REGISTRATION FAILED — TRY AGAIN');
         } finally {
