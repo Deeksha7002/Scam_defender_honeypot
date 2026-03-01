@@ -633,6 +633,13 @@ class AnalyzeRequest(BaseModel):
 def analyze_text(req: AnalyzeRequest):
     from backend.analyzer import ScamAnalyzer
     import re
+    import nltk
+    
+    # Ensure TextBlob corpus is downloaded
+    try:
+        nltk.data.find('tokenizers/punkt')
+    except LookupError:
+        nltk.download('punkt')
     
     analyzer = ScamAnalyzer()
     
