@@ -631,28 +631,15 @@ class AnalyzeRequest(BaseModel):
 
 @app.post("/api/analyze")
 def analyze_text(req: AnalyzeRequest):
-    from backend.analyzer import ScamAnalyzer
     import re
-    import nltk
+    import traceback
     
-    # Ensure all required TextBlob corpora are downloaded for Render
-    corpora = ['punkt_tab', 'averaged_perceptron_tagger', 'brown', 'wordnet']
-    for c in corpora:
-        try:
-            nltk.data.find(f'tokenizers/{c}' if 'punkt' in c else f'corpora/{c}')
-        except LookupError:
-            nltk.download(c)
-    
-    analyzer = ScamAnalyzer()
-    
-    # Format message for the analyzer
-    history = [{"role": "scammer", "content": req.text}]
-    score, classification = analyzer.analyze_behavior(history)
-    
-    # Extract simple IOCs
+    classification = "benign"
+    intent = "GENERAL INQUIRY"
+    score = 0.1
     iocs = []
     
-    # Very basic regex for urls/domains
+    # Very basic regex for URLs/domains/phones/crypto (always runs)
     urls = re.findall(r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+', req.text)
     domains = re.findall(r'[a-zA-Z0-9-]+\.(?:com|net|org|io|biz|info)', req.text)
     
@@ -661,17 +648,52 @@ def analyze_text(req: AnalyzeRequest):
         if not any(d in u for u in urls):
             iocs.append(d)
             
-    # basic phone numbers
     phones = re.findall(r'\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}', req.text)
     iocs.extend(phones)
     
-    # basic crypto addresses
     crypto = re.findall(r'\b(?:1|3|bc1|0x)[a-zA-Z0-9]{25,40}\b', req.text)
     iocs.extend(crypto)
     
+    try:
+        from backend.analyzer import ScamAnalyzer
+        import nltk
+        
+        # Best effort corpora download, skip if it fails
+        corpora = ['punkt_tab', 'averaged_perceptron_tagger', 'brown', 'wordnet']
+        for c in corpora:
+            try:
+                nltk.data.find(f'tokenizers/{c}' if 'punkt' in c else f'corpora/{c}')
+            except LookupError:
+                try:
+                    nltk.download(c, quiet=True)
+                except Exception:
+                    pass
+        
+        analyzer = ScamAnalyzer()
+        history = [{"role": "scammer", "content": req.text}]
+        score, classification = analyzer.analyze_behavior(history)
+        intent = analyzer.intent.replace("_", " ")
+        
+    except Exception as e:
+        logging.error(f"NLP Analyzer failed, falling back to basic heuristics: {e}")
+        traceback.print_exc()
+        
+        # Fallback Heuristics
+        lower_text = req.text.lower()
+        if any(w in lower_text for w in ["password", "otp", "code", "wallet", "crypto", "arrest", "warrant", "urgent"]):
+            classification = "likely_scam"
+            intent = "SUSPICIOUS ACTIVITY"
+            score = 0.7
+        if any(w in lower_text for w in ["click here", "verify your"]):
+            classification = "scam"
+            intent = "MALICIOUS PHISHING"
+            score = 0.95
+        if urls or crypto:
+            classification = "scam"
+            
     return {
         "classification": classification,
-        "intent": analyzer.intent.replace("_", " "),
+        "intent": intent,
         "score": score,
         "iocs": list(set(iocs))
     }
