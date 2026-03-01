@@ -1864,9 +1864,22 @@ body {
   }
 
   /* Evidence Locker Mobile Fixes */
+  .locker-overlay {
+    position: fixed !important;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 100dvh;
+    z-index: 1000;
+    padding: 0 !important;
+  }
+
   .locker-modal {
     flex-direction: column;
     height: 100%;
+    border-radius: 0 !important;
+    border: none !important;
   }
 
   .locker-sidebar {
