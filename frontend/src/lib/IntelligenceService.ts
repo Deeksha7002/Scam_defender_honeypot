@@ -4,15 +4,37 @@ import { API_BASE_URL } from './config';
 export class IntelligenceService {
     private static records: ScamRecord[] = [];
     private static backendStats: any = null;
+    private static listeners: (() => void)[] = [];
+
+    static subscribe(listener: () => void) {
+        this.listeners.push(listener);
+        return () => {
+            this.listeners = this.listeners.filter(l => l !== listener);
+        };
+    }
+
+    private static notifyListeners() {
+        this.listeners.forEach(l => l());
+    }
 
     static recordScam(record: Omit<ScamRecord, 'id' | 'timestamp'>) {
-        const newRecord: ScamRecord = {
-            ...record,
-            id: Math.random().toString(36).substr(2, 9),
-            timestamp: Date.now()
-        };
-        this.records.push(newRecord);
-        console.log(`[IntelligenceService] 📊 Recorded ${record.type} scam attempt from ${record.senderName}`);
+        // Prevent recording the exact same conversation multiple times per message
+        // Just update existing or push if new
+        const existing = this.records.find(r => r.conversationId === record.conversationId);
+        if (existing) {
+            // Merge identifiers
+            existing.identifiers = Array.from(new Set([...existing.identifiers, ...record.identifiers]));
+            existing.type = record.type; // Update type if it escalated
+        } else {
+            const newRecord: ScamRecord = {
+                ...record,
+                id: Math.random().toString(36).substr(2, 9),
+                timestamp: Date.now()
+            };
+            this.records.push(newRecord);
+            console.log(`[IntelligenceService] 📊 Recorded ${record.type} scam attempt from ${record.senderName}`);
+        }
+        this.notifyListeners();
     }
 
     static async syncWithBackend(): Promise<void> {
@@ -34,38 +56,50 @@ export class IntelligenceService {
     static getSummary(): IntelligenceSummary {
         const now = Date.now();
         const oneDay = 24 * 60 * 60 * 1000;
+        const oneWeek = 7 * oneDay;
+        const oneMonth = 30 * oneDay;
 
-        // Local calculations for real-time updates
-        const localTodays = this.records.filter(r => now - r.timestamp < oneDay).length;
+        // Local calculations for real-time updates (only those not yet synced from backend if possible, but simplest is to just add)
+        const localTodays = this.records.filter(r => now - r.timestamp < oneDay);
+        const localWeeks = this.records.filter(r => now - r.timestamp < oneWeek);
+        const localMonths = this.records.filter(r => now - r.timestamp < oneMonth);
 
         // Merge with backend stats
         const backendTypes = this.backendStats?.types || {};
 
-        const summary: IntelligenceSummary = {
-            today: this.backendStats?.today ?? localTodays,
-            week: this.backendStats?.week ?? this.backendStats?.reports_filed ?? localTodays,
-            month: this.backendStats?.month ?? this.backendStats?.reports_filed ?? localTodays,
-            byType: {
-                ROMANCE: (backendTypes['ROMANCE'] || 0),
-                CRYPTO: (backendTypes['CRYPTO'] || 0),
-                JOB: (backendTypes['JOB'] || 0),
-                IMPERSONATION: (backendTypes['IMPERSONATION'] || 0),
-                LOTTERY: (backendTypes['LOTTERY'] || 0),
-                TECHNICAL_SUPPORT: (backendTypes['TECHNICAL_SUPPORT'] || 0),
-                AUTHORITY: (backendTypes['AUTHORITY'] || 0),
-                OTHER: (backendTypes['OTHER'] || backendTypes['SCAM'] || 0)
-            },
-            today_types: this.backendStats?.today_types,
-            week_types: this.backendStats?.week_types,
-            month_types: this.backendStats?.month_types,
-            today_scammers: this.backendStats?.today_scammers,
-            week_scammers: this.backendStats?.week_scammers,
-            month_scammers: this.backendStats?.month_scammers,
-            uniqueScammers: this.backendStats?.reports_filed ?? new Set(this.records.map(r => r.senderName)).size,
-            repeatedIdentifiers: this.getRepeatedIdentifiers()
+        // Helper to merge breakdown types ensuring all base keys exist
+        const mergeTypes = (backend: Record<string, number>, localRecs: ScamRecord[]) => {
+            const merged: any = {
+                ROMANCE: 0, CRYPTO: 0, JOB: 0, IMPERSONATION: 0,
+                LOTTERY: 0, TECHNICAL_SUPPORT: 0, AUTHORITY: 0, OTHER: 0,
+                ...backend
+            };
+            localRecs.forEach(r => {
+                const t = r.type || 'OTHER';
+                merged[t] = (merged[t] || 0) + 1;
+            });
+            return merged;
         };
 
+        const todayTypes = mergeTypes(this.backendStats?.today_types || backendTypes, localTodays);
+        const weekTypes = mergeTypes(this.backendStats?.week_types || backendTypes, localWeeks);
+        const monthTypes = mergeTypes(this.backendStats?.month_types || backendTypes, localMonths);
+        const baseTypes = mergeTypes(backendTypes, this.records);
 
+        const summary: IntelligenceSummary = {
+            today: (this.backendStats?.today || 0) + localTodays.length,
+            week: (this.backendStats?.week || this.backendStats?.reports_filed || 0) + localWeeks.length,
+            month: (this.backendStats?.month || this.backendStats?.reports_filed || 0) + localMonths.length,
+            byType: baseTypes,
+            today_types: todayTypes,
+            week_types: weekTypes,
+            month_types: monthTypes,
+            today_scammers: (this.backendStats?.today_scammers || 0) + new Set(localTodays.map(r => r.senderName)).size,
+            week_scammers: (this.backendStats?.week_scammers || 0) + new Set(localWeeks.map(r => r.senderName)).size,
+            month_scammers: (this.backendStats?.month_scammers || 0) + new Set(localMonths.map(r => r.senderName)).size,
+            uniqueScammers: (this.backendStats?.reports_filed || 0) + new Set(this.records.map(r => r.senderName)).size,
+            repeatedIdentifiers: this.getRepeatedIdentifiers()
+        };
 
         return summary;
     }

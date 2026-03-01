@@ -9,11 +9,19 @@ export const IntelligenceReport: React.FC = () => {
 
     useEffect(() => {
         IntelligenceService.syncWithBackend().then(refreshData);
-        // Refresh every 30s to keep dashboard alive
+
+        // Subscribe to real-time local updates
+        const unsubscribe = IntelligenceService.subscribe(refreshData);
+
+        // Refresh every 30s to keep dashboard up to date with backend
         const interval = setInterval(() => {
             IntelligenceService.syncWithBackend().then(refreshData);
         }, 30000);
-        return () => clearInterval(interval);
+
+        return () => {
+            clearInterval(interval);
+            unsubscribe();
+        };
     }, [range]);
 
     const refreshData = () => {
