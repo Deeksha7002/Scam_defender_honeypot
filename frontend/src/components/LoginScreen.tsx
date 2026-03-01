@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect, useRef } from 'react';
 import { Shield, Cpu, Lock, Fingerprint, EyeOff, Eye, AlertTriangle, UserPlus, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { API_BASE_URL } from '../lib/config';
@@ -181,10 +181,12 @@ export const LoginScreen: React.FC<LoginScreenProps> = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [statusMsg, setStatusMsg] = useState<string | null>(null);
+    const bioAttempted = useRef(false);
 
     // ── Biometric auto-trigger on arrival (PhonePe style) ──────────────────
     useEffect(() => {
-        if (mode === 'returning' && lastUser && window.PublicKeyCredential) {
+        if (mode === 'returning' && lastUser && window.PublicKeyCredential && !bioAttempted.current) {
+            bioAttempted.current = true;
             // Short delay to allow UI to settle before the browser native prompt pops up
             const timer = setTimeout(() => triggerBiometric(lastUser), 800);
             return () => clearTimeout(timer);
@@ -242,9 +244,9 @@ export const LoginScreen: React.FC<LoginScreenProps> = () => {
                 throw new Error(data.detail || 'verification_failed');
             }
         } catch (e: any) {
-            // Seamless fallback: if biometrics fail or cancel, we just stay on the login screen
+            // Seamless fallback: if biometrics fail or cancel, show password form
             console.log("Biometric auto-prompt skipped or failed:", e);
-            setStatusMsg(null);
+            setStatusMsg('BIOMETRIC UNAVAILABLE — USE ACCESS CODE BELOW');
         } finally {
             setIsLoading(false);
         }

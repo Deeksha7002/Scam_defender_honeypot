@@ -14,7 +14,8 @@ if not _db_url or _db_url.startswith("sqlite"):
     # Ensure parent directory exists
     os.makedirs(os.path.dirname(_db_file), exist_ok=True)
 else:
-    SQLALCHEMY_DATABASE_URL = _db_url
+    # Render gives postgres:// but SQLAlchemy needs postgresql://
+    SQLALCHEMY_DATABASE_URL = _db_url.replace("postgres://", "postgresql://", 1)
 
 connect_args = {"check_same_thread": False} if SQLALCHEMY_DATABASE_URL.startswith("sqlite") else {}
 engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args=connect_args)
