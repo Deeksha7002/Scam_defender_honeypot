@@ -36,9 +36,17 @@ init_db()
 app = FastAPI(title="Honeypot Cyber Cell API")
 
 # Enable CORS for frontend
+ALLOWED_ORIGINS = [
+    os.environ.get("FRONTEND_URL", "https://rakshak-ai-drab.vercel.app"),
+    "https://rakshak-ai-drab.vercel.app",
+    "https://scam-defender-honeypot.vercel.app",
+    "https://honeypot-gamma.vercel.app",
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*", "X-Rakshak-Token"],
