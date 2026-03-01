@@ -58,7 +58,7 @@ class WebAuthnChallenge(Base):
 
     key = Column(String, primary_key=True)  # e.g. "LOGIN_username" or "REGISTER_username"
     challenge = Column(Text)  # base64url encoded challenge bytes
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
 def init_db():
     Base.metadata.create_all(bind=engine)
