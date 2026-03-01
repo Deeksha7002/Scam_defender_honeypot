@@ -1862,6 +1862,56 @@ body {
   .forensics-container {
     padding: 1rem !important;
   }
+
+  /* Evidence Locker Mobile Fixes */
+  .locker-modal {
+    flex-direction: column;
+    height: 100%;
+  }
+
+  .locker-sidebar {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid var(--border-color);
+    flex: 0 0 auto;
+    max-height: 35vh;
+  }
+
+  .locker-detail-pane {
+    flex: 1 1 auto;
+    overflow-y: auto;
+  }
+
+  .locker-detail-header {
+    flex-direction: column;
+    gap: 1rem;
+    padding: 1.25rem 1rem;
+  }
+
+  .locker-header-left,
+  .locker-header-right {
+    width: 100%;
+  }
+
+  .locker-header-right {
+    align-items: flex-start;
+  }
+
+  .locker-header-right .flex.flex-col.items-end {
+    align-items: flex-start;
+  }
+
+  .locker-meta-row {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .locker-detail-grid {
+    grid-template-columns: 1fr;
+    padding: 1rem;
+    gap: 1rem;
+    overflow: visible;
+  }
 }
 
 /* Specific fix for the login screen on mobile */
