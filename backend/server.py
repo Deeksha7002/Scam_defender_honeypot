@@ -127,6 +127,7 @@ def analyze_text(payload: AnalysisRequest, request: Request):
     intent = "GENERAL INQUIRY"
     score = 0.1
     iocs = []
+    neuro_matrix = {}
     
     # Very basic regex for URLs/domains/phones/crypto (always runs)
     req_text = payload.text
@@ -162,7 +163,7 @@ def analyze_text(payload: AnalysisRequest, request: Request):
         # Reusing the globally instantiated analyzer for performance
         # analyzer is defined globally in server.py
         history = [{"role": "scammer", "content": req_text}]
-        score, classification = analyzer.analyze_behavior(history)
+        score, classification, neuro_matrix = analyzer.analyze_behavior(history)
         intent = analyzer.intent.replace("_", " ")
         
     except Exception as e:
@@ -190,9 +191,11 @@ def analyze_text(payload: AnalysisRequest, request: Request):
         "score": score,
         "intent": intent,
         "iocs": list(set(iocs)),
+        "neuro_matrix": neuro_matrix,
         "processing_time": time.time() - start_time,
         "verified": True
     }
+
 
 # --- Stats Management ---
 def get_or_create_stats(db: Session):

@@ -125,8 +125,17 @@ class ScamAnalyzer:
             threat_classification = "benign"
             self.intent = "GENERAL_INQUIRY"
 
+        # Construct the Multi-Layer Neural Output
+        # This gives a granular breakdown of *why* the model made its decision
+        neuro_matrix = {
+            "financial_risk_node": min(1.0, tf_finance * 4.0),
+            "coercion_risk_node": min(1.0, tf_coercion * 5.0 * escalation_multiplier),
+            "urgency_spike_node": min(1.0, sum(urgency_graph) / max(len(urgency_graph), 1) * 3.0) if urgency_graph else 0.0,
+            "deception_complexity_node": self.sophistication_score
+        }
+
         logging.info(f"[NLP Core] Vector Magnitude: {dominant_intent[1]:.4f} | Escalation: {escalation_multiplier} | Threat: {threat_classification}")
-        return self.sophistication_score, threat_classification
+        return self.sophistication_score, threat_classification, neuro_matrix
 
     def _structural_link_check(self, text):
         link_pattern = r"(click|tap|visit|open|download|install).{0,30}(link|url|website|page|attachment|app|.apk|.exe)"

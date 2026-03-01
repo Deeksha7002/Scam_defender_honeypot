@@ -34,8 +34,8 @@ class HoneypotAgent:
         self.classification_cache[conv_id] = classification
         
         # 3. Analyze Sophistication
-        score, category = self.analyzer.analyze_behavior(self.conversation_history[conv_id])
-        self.sophistication_cache[conv_id] = {"score": score, "category": category}
+        score, category, neuro_matrix = self.analyzer.analyze_behavior(self.conversation_history[conv_id])
+        self.sophistication_cache[conv_id] = {"score": score, "category": category, "matrix": neuro_matrix}
         
         # 4. Extract IOCs
         self._extract_iocs(safe_text)
