@@ -172,9 +172,9 @@ def analyze_text(payload: AnalysisRequest, request: Request):
         # Fallback Heuristics
         lower_text = req_text.lower()
         if any(w in lower_text for w in ["password", "otp", "code", "wallet", "crypto", "arrest", "warrant", "urgent"]):
-            classification = "likely_scam"
+            classification = "scam"
             intent = "SUSPICIOUS ACTIVITY"
-            score = 0.7
+            score = 0.85
         if any(w in lower_text for w in ["click here", "verify your"]):
             classification = "scam"
             intent = "MALICIOUS PHISHING"

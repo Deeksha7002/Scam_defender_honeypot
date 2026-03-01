@@ -86,8 +86,15 @@ class ScamAnalyzer:
             self.intent = dominant_intent[0]
 
         # 3. Final Mathematical Risk Calculation
+        # Short messages with high command density ("send otp") are highly suspicious
+        risk_multiplier = 10.0
+        max_base_risk = 0.6
+        if total_words <= 8 and dominant_intent[1] > 0.4:
+            risk_multiplier = 15.0
+            max_base_risk = 0.85
+
         # Base risk is the magnitude of the dominant intent vector, scaled
-        base_risk = min(dominant_intent[1] * 10.0, 0.6) # Caps at 0.6 from raw keywords
+        base_risk = min(dominant_intent[1] * risk_multiplier, max_base_risk)
         
         # Apply Escalation Multiplier (This is where the math gets brutal for scammers)
         mathematical_risk = base_risk * escalation_multiplier
