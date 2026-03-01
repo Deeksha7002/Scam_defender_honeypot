@@ -53,5 +53,12 @@ class Stats(Base):
     scams_detected = Column(Integer, default=0)
     types_json = Column(JSON, default={}) # Store scam types count as JSON
 
+class WebAuthnChallenge(Base):
+    __tablename__ = "webauthn_challenges"
+
+    key = Column(String, primary_key=True)  # e.g. "LOGIN_username" or "REGISTER_username"
+    challenge = Column(Text)  # base64url encoded challenge bytes
+    created_at = Column(DateTime, default=datetime.utcnow)
+
 def init_db():
     Base.metadata.create_all(bind=engine)

@@ -24,7 +24,7 @@ if backend_dir not in sys.path:
 # Internal Modules
 from analyzer import ScamAnalyzer
 from agent import HoneypotAgent
-from database import SessionLocal, engine, init_db, User, Case, Stats
+from database import SessionLocal, engine, init_db, User, Case, Stats, WebAuthnChallenge
 import security
 
 # Setup logging
@@ -359,8 +359,26 @@ def get_webauthn_config(request: Request):
 
 RP_NAME = "Rakshak AI"
 
-# In-memory store for challenges
-challenges = {} 
+# Database-backed challenge store (survives server restarts)
+def store_challenge(db: Session, key: str, challenge_bytes: bytes):
+    """Store a WebAuthn challenge in the database."""
+    existing = db.query(WebAuthnChallenge).filter(WebAuthnChallenge.key == key).first()
+    challenge_b64 = bytes_to_base64url(challenge_bytes)
+    if existing:
+        existing.challenge = challenge_b64
+    else:
+        db.add(WebAuthnChallenge(key=key, challenge=challenge_b64))
+    db.commit()
+
+def get_challenge(db: Session, key: str) -> bytes:
+    """Retrieve and delete a WebAuthn challenge from the database."""
+    record = db.query(WebAuthnChallenge).filter(WebAuthnChallenge.key == key).first()
+    if not record:
+        return None
+    challenge = base64url_to_bytes(record.challenge)
+    db.delete(record)
+    db.commit()
+    return challenge
 
 @app.post("/api/auth/biometric/register/start")
 @limiter.limit("5/minute")
@@ -384,7 +402,7 @@ def register_bio_start(username: str, request: Request, db: Session = Depends(ge
         attestation=AttestationConveyancePreference.NONE,
     )
 
-    challenges[user.username] = options.challenge
+    store_challenge(db, user.username, options.challenge)
     return json.loads(options_to_json(options))
 
 @app.post("/api/auth/biometric/register/finish")
@@ -394,7 +412,7 @@ def register_bio_finish(response: Dict[str, Any], username: str, request: Reques
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    challenge = challenges.get(user.username)
+    challenge = get_challenge(db, user.username)
     if not challenge:
         raise HTTPException(status_code=400, detail="No active registration challenge found")
 
@@ -429,7 +447,6 @@ def register_bio_finish(response: Dict[str, Any], username: str, request: Reques
         creds.append(new_cred)
         user.webauthn_credentials = creds
         db.commit()
-        challenges.pop(user.username, None)
         return {"status": "registered"}
 
     except Exception as e:
@@ -463,7 +480,7 @@ def login_bio_start(username: str, request: Request, db: Session = Depends(get_d
         user_verification=UserVerificationRequirement.PREFERRED,
     )
 
-    challenges["LOGIN_" + username] = options.challenge
+    store_challenge(db, "LOGIN_" + username, options.challenge)
     return json.loads(options_to_json(options))
 
 @app.post("/api/auth/biometric/login/finish")
@@ -473,7 +490,7 @@ def login_bio_finish(response: Dict[str, Any], username: str, request: Request, 
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    challenge = challenges.get("LOGIN_" + username)
+    challenge = get_challenge(db, "LOGIN_" + username)
     if not challenge:
         raise HTTPException(status_code=400, detail="No active login challenge found")
 
@@ -516,7 +533,6 @@ def login_bio_finish(response: Dict[str, Any], username: str, request: Request, 
         matched_cred["sign_count"] = verification.new_sign_count
         user.webauthn_credentials = list(user.webauthn_credentials)
         db.commit()
-        challenges.pop("LOGIN_" + username, None)
 
         access_token = security.create_access_token(data={"sub": user.username, "role": user.role})
         return {"status": "success", "token": access_token}
@@ -529,7 +545,7 @@ def login_bio_finish(response: Dict[str, Any], username: str, request: Request, 
 DISCOVER_CHALLENGE_KEY = "__DISCOVER__"
 
 @app.post("/api/auth/biometric/discover/start")
-def discover_bio_start(request: Request):
+def discover_bio_start(request: Request, db: Session = Depends(get_db)):
     """Generate a challenge with no allow_credentials — browser will offer all saved passkeys."""
     rp_id, origin = get_webauthn_config(request)
     options = generate_authentication_options(
@@ -537,13 +553,13 @@ def discover_bio_start(request: Request):
         allow_credentials=[],   # empty = discoverable / resident key
         user_verification=UserVerificationRequirement.PREFERRED,
     )
-    challenges[DISCOVER_CHALLENGE_KEY] = options.challenge
+    store_challenge(db, DISCOVER_CHALLENGE_KEY, options.challenge)
     return json.loads(options_to_json(options))
 
 @app.post("/api/auth/biometric/discover/finish")
 def discover_bio_finish(response: Dict[str, Any], request: Request, db: Session = Depends(get_db)):
     """Verify the assertion and identify the user via userHandle."""
-    challenge = challenges.get(DISCOVER_CHALLENGE_KEY)
+    challenge = get_challenge(db, DISCOVER_CHALLENGE_KEY)
     if not challenge:
         raise HTTPException(status_code=400, detail="No active discovery challenge")
 
@@ -601,7 +617,6 @@ def discover_bio_finish(response: Dict[str, Any], request: Request, db: Session 
         matched_cred["sign_count"] = verification.new_sign_count
         user.webauthn_credentials = list(user.webauthn_credentials)
         db.commit()
-        challenges.pop(DISCOVER_CHALLENGE_KEY, None)
 
         access_token = security.create_access_token(data={"sub": user.username, "role": user.role})
         return {"status": "success", "token": access_token, "username": user.username}
