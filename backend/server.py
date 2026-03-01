@@ -635,11 +635,11 @@ def analyze_text(req: AnalyzeRequest):
     import re
     import nltk
     
-    # Ensure TextBlob corpus is downloaded
+    # Ensure TextBlob corpus is downloaded (newer NLTK needs punkt_tab)
     try:
-        nltk.data.find('tokenizers/punkt')
+        nltk.data.find('tokenizers/punkt_tab')
     except LookupError:
-        nltk.download('punkt')
+        nltk.download('punkt_tab')
     
     analyzer = ScamAnalyzer()
     
