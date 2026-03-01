@@ -635,11 +635,13 @@ def analyze_text(req: AnalyzeRequest):
     import re
     import nltk
     
-    # Ensure TextBlob corpus is downloaded (newer NLTK needs punkt_tab)
-    try:
-        nltk.data.find('tokenizers/punkt_tab')
-    except LookupError:
-        nltk.download('punkt_tab')
+    # Ensure all required TextBlob corpora are downloaded for Render
+    corpora = ['punkt_tab', 'averaged_perceptron_tagger', 'brown', 'wordnet']
+    for c in corpora:
+        try:
+            nltk.data.find(f'tokenizers/{c}' if 'punkt' in c else f'corpora/{c}')
+        except LookupError:
+            nltk.download(c)
     
     analyzer = ScamAnalyzer()
     
