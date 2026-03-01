@@ -73,12 +73,28 @@ function App() {
 
   const simulateIncomingTraffic = async () => {
     if (!isMonitoringRef.current) return;
+
+    // Initial burst
     spawnThread();
     await new Promise(r => setTimeout(r, 1500));
     spawnThread();
     await new Promise(r => setTimeout(r, 2000));
     spawnThread();
-    await new Promise(r => setTimeout(r, 2000));
+
+    // Continuous trickle
+    const spawnLoop = async () => {
+      if (!isMonitoringRef.current) return;
+
+      const randomDelay = 8000 + Math.random() * 15000; // 8-23 seconds
+      await new Promise(r => setTimeout(r, randomDelay));
+
+      if (isMonitoringRef.current) {
+        spawnThread();
+        spawnLoop(); // Recursive loop
+      }
+    };
+
+    spawnLoop();
   };
 
   // Botnet Simulation Mode
