@@ -625,6 +625,48 @@ def discover_bio_finish(response: Dict[str, Any], request: Request, db: Session 
         logging.error(f"Discoverable biometric login failed: {e}")
         raise HTTPException(status_code=400, detail=f"Biometric auth failed: {str(e)}")
 
+from pydantic import BaseModel
+class AnalyzeRequest(BaseModel):
+    text: str
+
+@app.post("/api/analyze")
+def analyze_text(req: AnalyzeRequest):
+    from backend.analyzer import ScamAnalyzer
+    import re
+    
+    analyzer = ScamAnalyzer()
+    
+    # Format message for the analyzer
+    history = [{"role": "scammer", "content": req.text}]
+    score, classification = analyzer.analyze_behavior(history)
+    
+    # Extract simple IOCs
+    iocs = []
+    
+    # Very basic regex for urls/domains
+    urls = re.findall(r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+', req.text)
+    domains = re.findall(r'[a-zA-Z0-9-]+\.(?:com|net|org|io|biz|info)', req.text)
+    
+    iocs.extend(urls)
+    for d in domains:
+        if not any(d in u for u in urls):
+            iocs.append(d)
+            
+    # basic phone numbers
+    phones = re.findall(r'\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}', req.text)
+    iocs.extend(phones)
+    
+    # basic crypto addresses
+    crypto = re.findall(r'\b(?:1|3|bc1|0x)[a-zA-Z0-9]{25,40}\b', req.text)
+    iocs.extend(crypto)
+    
+    return {
+        "classification": classification,
+        "intent": analyzer.intent.replace("_", " "),
+        "score": score,
+        "iocs": list(set(iocs))
+    }
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
