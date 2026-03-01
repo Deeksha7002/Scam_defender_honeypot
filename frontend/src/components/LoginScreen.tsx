@@ -206,7 +206,10 @@ export const LoginScreen: React.FC<LoginScreenProps> = () => {
                     headers: { 'X-Rakshak-Token': 'rakshak-core-v1' }
                 }
             );
-            if (!startRes.ok) throw new Error('biometric_start_failed');
+            if (!startRes.ok) {
+                const errData = await startRes.json().catch(() => ({}));
+                throw new Error(errData.detail || `login/start failed (${startRes.status})`);
+            }
             const rawOptions = await startRes.json();
             const requestOptions = prepareAuthenticationOptions(rawOptions);
 
@@ -244,9 +247,9 @@ export const LoginScreen: React.FC<LoginScreenProps> = () => {
                 throw new Error(data.detail || 'verification_failed');
             }
         } catch (e: any) {
-            // Seamless fallback: if biometrics fail or cancel, show password form
-            console.log("Biometric auto-prompt skipped or failed:", e);
-            setStatusMsg('BIOMETRIC UNAVAILABLE — USE ACCESS CODE BELOW');
+            console.log("Biometric login failed:", e);
+            setStatusMsg(null);
+            setError(`BIOMETRIC FAILED: ${e.message || 'unknown error'} — USE ACCESS CODE`);
         } finally {
             setIsLoading(false);
         }
