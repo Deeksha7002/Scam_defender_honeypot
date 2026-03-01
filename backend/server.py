@@ -117,20 +117,79 @@ def read_root():
 @limiter.limit("20/minute")
 def analyze_text(payload: AnalysisRequest, request: Request):
     """
-    Performs deep heuristic analysis on a text snippet.
+    Performs deep heuristic analysis on a text snippet with robust NLTK fallback.
     """
+    import re
+    import traceback
+    
     start_time = time.time()
+    classification = "benign"
+    intent = "GENERAL INQUIRY"
+    score = 0.1
+    iocs = []
     
-    analysis_result = analyzer.analyze_behavior([{"role": "scammer", "content": payload.text}])
-    score, threat_classification = analysis_result
+    # Very basic regex for URLs/domains/phones/crypto (always runs)
+    req_text = payload.text
+    urls = re.findall(r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+', req_text)
+    domains = re.findall(r'[a-zA-Z0-9-]+\.(?:com|net|org|io|biz|info)', req_text)
     
+    iocs.extend(urls)
+    for d in domains:
+        if not any(d in u for u in urls):
+            iocs.append(d)
+            
+    phones = re.findall(r'\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}', req_text)
+    iocs.extend(phones)
+    
+    crypto = re.findall(r'\b(?:1|3|bc1|0x)[a-zA-Z0-9]{25,40}\b', req_text)
+    iocs.extend(crypto)
+    
+    try:
+        from backend.analyzer import ScamAnalyzer
+        import nltk
+        
+        # Best effort corpora download, skip if it fails
+        corpora = ['punkt_tab', 'averaged_perceptron_tagger', 'brown', 'wordnet']
+        for c in corpora:
+            try:
+                nltk.data.find(f'tokenizers/{c}' if 'punkt' in c else f'corpora/{c}')
+            except LookupError:
+                try:
+                    nltk.download(c, quiet=True)
+                except Exception:
+                    pass
+        
+        # Reusing the globally instantiated analyzer for performance
+        # analyzer is defined globally in server.py
+        history = [{"role": "scammer", "content": req_text}]
+        score, classification = analyzer.analyze_behavior(history)
+        intent = analyzer.intent.replace("_", " ")
+        
+    except Exception as e:
+        logging.error(f"NLP Analyzer failed, falling back to basic heuristics: {e}")
+        traceback.print_exc()
+        
+        # Fallback Heuristics
+        lower_text = req_text.lower()
+        if any(w in lower_text for w in ["password", "otp", "code", "wallet", "crypto", "arrest", "warrant", "urgent"]):
+            classification = "likely_scam"
+            intent = "SUSPICIOUS ACTIVITY"
+            score = 0.7
+        if any(w in lower_text for w in ["click here", "verify your"]):
+            classification = "scam"
+            intent = "MALICIOUS PHISHING"
+            score = 0.95
+        if urls or crypto:
+            classification = "scam"
+            
     # Simulate processing delay for "Deep Scan" effect
     time.sleep(0.5) 
     
     return {
-        "classification": threat_classification,
+        "classification": classification,
         "score": score,
-        "intent": analyzer.intent,
+        "intent": intent,
+        "iocs": list(set(iocs)),
         "processing_time": time.time() - start_time,
         "verified": True
     }
@@ -629,74 +688,7 @@ from pydantic import BaseModel
 class AnalyzeRequest(BaseModel):
     text: str
 
-@app.post("/api/analyze")
-def analyze_text(req: AnalyzeRequest):
-    import re
-    import traceback
-    
-    classification = "benign"
-    intent = "GENERAL INQUIRY"
-    score = 0.1
-    iocs = []
-    
-    # Very basic regex for URLs/domains/phones/crypto (always runs)
-    urls = re.findall(r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+', req.text)
-    domains = re.findall(r'[a-zA-Z0-9-]+\.(?:com|net|org|io|biz|info)', req.text)
-    
-    iocs.extend(urls)
-    for d in domains:
-        if not any(d in u for u in urls):
-            iocs.append(d)
-            
-    phones = re.findall(r'\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}', req.text)
-    iocs.extend(phones)
-    
-    crypto = re.findall(r'\b(?:1|3|bc1|0x)[a-zA-Z0-9]{25,40}\b', req.text)
-    iocs.extend(crypto)
-    
-    try:
-        from backend.analyzer import ScamAnalyzer
-        import nltk
-        
-        # Best effort corpora download, skip if it fails
-        corpora = ['punkt_tab', 'averaged_perceptron_tagger', 'brown', 'wordnet']
-        for c in corpora:
-            try:
-                nltk.data.find(f'tokenizers/{c}' if 'punkt' in c else f'corpora/{c}')
-            except LookupError:
-                try:
-                    nltk.download(c, quiet=True)
-                except Exception:
-                    pass
-        
-        analyzer = ScamAnalyzer()
-        history = [{"role": "scammer", "content": req.text}]
-        score, classification = analyzer.analyze_behavior(history)
-        intent = analyzer.intent.replace("_", " ")
-        
-    except Exception as e:
-        logging.error(f"NLP Analyzer failed, falling back to basic heuristics: {e}")
-        traceback.print_exc()
-        
-        # Fallback Heuristics
-        lower_text = req.text.lower()
-        if any(w in lower_text for w in ["password", "otp", "code", "wallet", "crypto", "arrest", "warrant", "urgent"]):
-            classification = "likely_scam"
-            intent = "SUSPICIOUS ACTIVITY"
-            score = 0.7
-        if any(w in lower_text for w in ["click here", "verify your"]):
-            classification = "scam"
-            intent = "MALICIOUS PHISHING"
-            score = 0.95
-        if urls or crypto:
-            classification = "scam"
-            
-    return {
-        "classification": classification,
-        "intent": intent,
-        "score": score,
-        "iocs": list(set(iocs))
-    }
+
 
 if __name__ == "__main__":
     import uvicorn
