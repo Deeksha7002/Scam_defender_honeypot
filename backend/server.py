@@ -625,62 +625,6 @@ def discover_bio_finish(response: Dict[str, Any], request: Request, db: Session 
         logging.error(f"Discoverable biometric login failed: {e}")
         raise HTTPException(status_code=400, detail=f"Biometric auth failed: {str(e)}")
 
-@app.post("/api/seed-realistic")
-def seed_realistic_cases(db: Session = Depends(get_db)):
-    import random
-    from datetime import timedelta, timezone
-    now = datetime.now(timezone.utc)
-    
-    # 1. Clear old cases and stats
-    db.query(Case).delete()
-    db.query(Stats).delete()
-    
-    # 2. Add historically accurate volumes
-    # Day: ~20-30 cases
-    # Week: ~150-200 cases
-    # Month: ~600-900 cases
-    
-    types_dist = ["ROMANCE", "ROMANCE", "CRYPTO", "CRYPTO", "CRYPTO", "JOB", "JOB", "LOTTERY", "TECHNICAL_SUPPORT", "AUTHORITY"]
-    
-    cases_to_create = []
-    
-    # Today (0-1 days ago): 28 cases
-    for _ in range(28):
-        cases_to_create.append((random.choice(types_dist), 0))
-        
-    # Rest of week (2-7 days ago): 165 cases
-    for _ in range(165):
-        cases_to_create.append((random.choice(types_dist), random.randint(2, 6)))
-        
-    # Rest of month (8-30 days ago): 640 cases
-    for _ in range(640):
-        cases_to_create.append((random.choice(types_dist), random.randint(8, 29)))
-        
-    for idx, (c_type, days_ago) in enumerate(cases_to_create):
-        past_time = now - timedelta(days=days_ago, hours=random.randint(1, 23), minutes=random.randint(0, 59))
-        c = Case(
-            id=f"REAL-{idx}-{int(past_time.timestamp())}",
-            scammer_name=f"Threat Actor {random.randint(1000, 9999)}",
-            platform=random.choice(["whatsapp", "telegram", "sms", "email"]),
-            status="closed",
-            threat_level=c_type,
-            iocs={"urls": [], "paymentMethods": []},
-            transcript=[],
-            timestamp=past_time.isoformat(),
-            auto_reported=True
-        )
-        db.add(c)
-        
-    stats = Stats(
-        reports_filed=833, 
-        scams_detected=833, 
-        types_json={"ROMANCE": 160, "CRYPTO": 250, "JOB": 160, "LOTTERY": 80, "TECHNICAL_SUPPORT": 80, "AUTHORITY": 103}
-    )
-    db.add(stats)
-        
-    db.commit()
-    return {"status": "success", "message": f"Injected {len(cases_to_create)} realistic cases"}
-
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
