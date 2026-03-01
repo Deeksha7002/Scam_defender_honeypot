@@ -242,6 +242,8 @@ export const LoginScreen: React.FC<LoginScreenProps> = () => {
             if (finishRes.ok && data.token) {
                 localStorage.setItem('token', data.token);
                 localStorage.setItem('scam_last_user', user);
+                // Set session BEFORE reload so AuthProvider knows user is authenticated
+                sessionStorage.setItem('active_session', JSON.stringify({ id: user, username: user }));
                 window.location.reload();
             } else {
                 throw new Error(data.detail || 'verification_failed');
