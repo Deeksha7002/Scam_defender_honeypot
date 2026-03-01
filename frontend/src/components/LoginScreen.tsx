@@ -266,11 +266,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = () => {
             if (window.PublicKeyCredential) {
                 try {
                     setStatusMsg('SETTING UP BIOMETRICS — FOLLOW DEVICE PROMPT...');
-                    // Timeout biometric enrollment after 10s to prevent mobile hanging
-                    await Promise.race([
-                        enrollBiometrics(username),
-                        new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 10000))
-                    ]);
+                    await enrollBiometrics(username);
                     setStatusMsg('✓ BIOMETRICS ENROLLED — WELCOME!');
                 } catch {
                     setStatusMsg('✓ ACCOUNT CREATED — LOGGING IN...');

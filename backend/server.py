@@ -339,20 +339,23 @@ from webauthn.helpers.structs import (
 )
 
 # Helper to get the current RP ID and Origin from the request
+FRONTEND_URL = os.environ.get("FRONTEND_URL", "https://rakshak-ai-drab.vercel.app")
+
 def get_webauthn_config(request: Request):
     from urllib.parse import urlparse
-    # Use the Origin header if present — this is the FRONTEND's domain (e.g. Vercel)
-    # which is what WebAuthn credentials are bound to.
+    # Always use the configured FRONTEND_URL for consistent RP ID
+    # This ensures WebAuthn credentials match the frontend domain
+    parsed = urlparse(FRONTEND_URL)
+    hostname = parsed.hostname or "localhost"
+    origin = f"{parsed.scheme}://{parsed.hostname}"
+    
+    # For local development, use the Origin header
     origin_header = request.headers.get("origin", "")
-    if origin_header:
-        parsed = urlparse(origin_header)
-        hostname = parsed.hostname or "localhost"
-        return hostname, origin_header
-    # Fallback: same-origin or local requests without an Origin header
-    host = request.headers.get("host", "localhost:5173")
-    hostname = host.split(":")[0]
-    protocol = "https" if request.url.scheme == "https" else "http"
-    return hostname, f"{protocol}://{host}"
+    if origin_header and ("localhost" in origin_header or "127.0.0.1" in origin_header):
+        local_parsed = urlparse(origin_header)
+        return local_parsed.hostname or "localhost", origin_header
+    
+    return hostname, origin
 
 RP_NAME = "Rakshak AI"
 
