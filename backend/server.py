@@ -381,7 +381,7 @@ def get_challenge(db: Session, key: str) -> bytes:
     return challenge
 
 @app.post("/api/auth/biometric/register/start")
-@limiter.limit("5/minute")
+@limiter.limit("30/minute")
 def register_bio_start(username: str, request: Request, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.username == username).first()
     if not user:
@@ -406,7 +406,7 @@ def register_bio_start(username: str, request: Request, db: Session = Depends(ge
     return json.loads(options_to_json(options))
 
 @app.post("/api/auth/biometric/register/finish")
-@limiter.limit("5/minute")
+@limiter.limit("30/minute")
 def register_bio_finish(response: Dict[str, Any], username: str, request: Request, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.username == username).first()
     if not user:
@@ -454,7 +454,7 @@ def register_bio_finish(response: Dict[str, Any], username: str, request: Reques
         raise HTTPException(status_code=400, detail=f"Registration failed: {str(e)}")
 
 @app.post("/api/auth/biometric/login/start")
-@limiter.limit("5/minute")
+@limiter.limit("30/minute")
 def login_bio_start(username: str, request: Request, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.username == username).first()
     if not user:
@@ -484,7 +484,7 @@ def login_bio_start(username: str, request: Request, db: Session = Depends(get_d
     return json.loads(options_to_json(options))
 
 @app.post("/api/auth/biometric/login/finish")
-@limiter.limit("5/minute")
+@limiter.limit("30/minute")
 def login_bio_finish(response: Dict[str, Any], username: str, request: Request, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.username == username).first()
     if not user:
