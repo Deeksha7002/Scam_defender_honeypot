@@ -1930,11 +1930,23 @@ body {
 
   .live-intercept-info-cards {
     flex-wrap: wrap;
+    gap: 0.5rem !important;
+    /* Tighter gap on mobile */
   }
 
   .live-intercept-info-cards .analysis-card {
-    flex: 1 1 45%;
-    /* Make cards take roughly half width on mobile */
+    flex: 1 1 calc(50% - 0.5rem);
+    /* Exactly 2 columns */
+    padding: 0.5rem;
+    /* Less padding to give text space */
+  }
+
+  .analysis-card .value {
+    word-break: normal;
+    /* Override default word-break that splits words like St. Pete rsb u r g */
+    overflow-wrap: anywhere;
+    font-size: 0.75rem !important;
+    /* Smaller text to fit */
   }
 
   .notification-toast {
