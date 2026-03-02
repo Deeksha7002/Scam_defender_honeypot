@@ -1843,6 +1843,22 @@ body {
     gap: 1rem !important;
   }
 
+  /* Live Intercept Mobile adjustments */
+  .live-intercept-header {
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: 0.75rem;
+  }
+
+  .live-intercept-info-cards {
+    flex-wrap: wrap;
+  }
+
+  .live-intercept-info-cards .analysis-card {
+    flex: 1 1 45%;
+    /* Make cards take roughly half width on mobile */
+  }
+
   .lab-grid {
     grid-template-columns: 1fr !important;
   }

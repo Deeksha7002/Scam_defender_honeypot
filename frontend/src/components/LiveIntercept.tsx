@@ -60,7 +60,7 @@ export const LiveIntercept: React.FC<LiveInterceptProps> = ({ intent, threatScor
             <div className="grid-bg" style={{ opacity: 0.1, pointerEvents: 'none' }} />
 
             {/* Top Row: Header & Status */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div className="live-intercept-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                     <div className="live-indicator">
                         <div className="dot" /> LIVE INTERCEPT
@@ -110,7 +110,7 @@ export const LiveIntercept: React.FC<LiveInterceptProps> = ({ intent, threatScor
                 </div>
 
                 {/* AI Analysis Cards */}
-                <div style={{ display: 'flex', gap: '1rem', flex: 1 }}>
+                <div className="live-intercept-info-cards" style={{ display: 'flex', gap: '1rem', flex: 1 }}>
                     <div className="analysis-card">
                         <div className="label">DETECTED INTENT</div>
                         <div className="value text-warning">{intent || "ANALYZING..."}</div>
