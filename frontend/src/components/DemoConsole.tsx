@@ -43,7 +43,7 @@ export const DemoConsole: React.FC = () => {
     };
 
     return (
-        <div style={{ padding: '2rem', color: '#e2e8f0', height: '100%', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+        <div className="demo-console-container" style={{ padding: '2rem', color: '#e2e8f0', height: '100%', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
             {/* Header */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '1.5rem' }}>
                 <div style={{ background: '#8b5cf6', padding: '12px', borderRadius: '8px' }}>
@@ -55,7 +55,7 @@ export const DemoConsole: React.FC = () => {
                 </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', flex: 1 }}>
+            <div className="lab-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', flex: 1 }}>
                 {/* Input Section */}
                 <div className="sys-card" style={{ display: 'flex', flexDirection: 'column' }}>
                     <h3 style={{ fontSize: '1rem', color: '#a78bfa', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>

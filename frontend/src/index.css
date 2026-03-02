@@ -1838,6 +1838,11 @@ body {
     justify-content: space-between;
   }
 
+  .demo-console-container {
+    padding: 1rem !important;
+    gap: 1rem !important;
+  }
+
   .lab-grid {
     grid-template-columns: 1fr !important;
   }
