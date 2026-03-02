@@ -420,14 +420,8 @@ function App() {
   return (
     <>
       {notification && (
-        <div style={{
-          position: 'fixed', top: '2rem', left: '50%', transform: 'translateX(-50%)', zIndex: 10000,
-          background: 'rgba(15, 23, 42, 0.95)', border: '1px solid var(--primary)',
-          boxShadow: '0 0 20px rgba(59, 130, 246, 0.3)', padding: '1rem 2rem', borderRadius: '8px',
-          color: 'var(--primary)', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '1rem',
-          animation: 'slideDown 0.3s ease-out'
-        }}>
-          <Shield size={20} />
+        <div className="notification-toast">
+          <Shield className="shrink-0" size={20} />
           {notification}
         </div>
       )}
@@ -562,11 +556,7 @@ function App() {
                   {selectedThread.isScanning && <span className="status-scanning">Scanning...</span>}
                   {selectedThread.classification === 'benign' && <span className="status-safe">✓ Verified Safe</span>}
                   {selectedThread.autoReported && (
-                    <span className="status-reported" style={{
-                      background: 'rgba(34, 197, 94, 0.2)', color: '#4ade80', padding: '2px 8px',
-                      borderRadius: '12px', fontSize: '0.75rem', fontWeight: 'bold',
-                      border: '1px solid #22c55e', marginLeft: '10px', boxShadow: '0 0 10px rgba(34, 197, 94, 0.3)'
-                    }}>
+                    <span className="status-reported">
                       AUTO-REPORTED TO CYBER CELL ✅
                     </span>
                   )}
@@ -574,24 +564,17 @@ function App() {
               </div>
 
               {selectedThread.isCompromised && (
-                <div style={{
-                  background: 'rgba(239, 68, 68, 0.15)', borderBottom: '1px solid var(--status-danger)',
-                  padding: '0.75rem 1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  animation: 'slideDown 0.3s ease-out'
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', color: '#fca5a5' }}>
+                <div className="compromise-alert-banner">
+                  <div className="compromise-alert-content">
                     <div style={{ background: 'var(--status-danger)', color: 'white', padding: '4px', borderRadius: '4px' }}>
                       <ShieldAlert size={18} />
                     </div>
                     <div>
-                      <div style={{ fontWeight: 'bold', fontSize: '0.9rem', color: 'var(--status-danger)' }}>KNOWN CONTACT COMPROMISED</div>
-                      <div style={{ fontSize: '0.8rem', opacity: 0.9 }}>Behavior anomaly detected for {selectedThread.senderName}.</div>
+                      <div className="compromise-alert-title">KNOWN CONTACT COMPROMISED</div>
+                      <div className="compromise-alert-desc">Behavior anomaly detected for {selectedThread.senderName}.</div>
                     </div>
                   </div>
-                  <button onClick={() => { setActiveView('LOCKER'); setSelectedThreadId(null); }} className="btn-danger-glow" style={{
-                    background: 'var(--status-danger)', color: 'white', border: 'none', padding: '0.4rem 0.8rem',
-                    borderRadius: '4px', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem'
-                  }}>
+                  <button onClick={() => { setActiveView('LOCKER'); setSelectedThreadId(null); }} className="btn-danger-glow compromise-alert-btn">
                     REPORT COMPROMISE
                   </button>
                 </div>
